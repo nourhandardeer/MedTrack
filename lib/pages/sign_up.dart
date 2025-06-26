@@ -5,6 +5,7 @@ import 'package:medtrack/auth.dart';
 import 'package:medtrack/home.dart';
 import 'package:medtrack/pages/loggin.dart';
 import 'package:medtrack/pages/profile_setup.dart';
+import 'package:medtrack/services/verifyEmail.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({Key? key}) : super(key: key);
@@ -71,12 +72,25 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
       if (errorMsg == null) {
         User? user = FirebaseAuth.instance.currentUser;
-        if (user != null) {
-          await checkAndLinkEmergencyContact(
-              user, user.uid, phone); // ✅ Pass UID and phone
-          _onSignupSuccess(
-              user.uid, firstName, lastName, phone, email, isEmergency);
-        }
+        if (user != null && !user.emailVerified) {
+  await user.sendEmailVerification();
+  Navigator.pushReplacement(
+    context,
+    MaterialPageRoute(
+      builder: (context) => VerifyEmailPage(
+        user: user,
+        firstName: firstName,
+        lastName: lastName,
+        phone: phone,
+        email: email,
+      ),
+    ),
+  );
+} else {
+  await checkAndLinkEmergencyContact(user!, user.uid, phone);
+  _onSignupSuccess(user.uid, firstName, lastName, phone, email, isEmergency);
+}
+
       } else {
         setState(() {
           errorMessage = errorMsg;
