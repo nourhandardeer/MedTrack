@@ -10,7 +10,6 @@ class RefillDetailsPage extends StatefulWidget {
   final Map<String, dynamic> medData; // بيانات الدواء
   final String userId; // UID of the original user (patient)
   final bool isEmergencyContact; // ← NEW: role flag
-  
 
   const RefillDetailsPage({
     Key? key,
@@ -24,10 +23,9 @@ class RefillDetailsPage extends StatefulWidget {
 }
 
 class _RefillDetailsPageState extends State<RefillDetailsPage> {
-  LatLng _userSavedLocation = const LatLng(0.0, 0.0);
+  LatLng patientLocation = const LatLng(0.0, 0.0);
   LatLng? _currentDeviceLocation;
   late GoogleMapController _mapController;
-  
 
   @override
   void initState() {
@@ -35,50 +33,79 @@ class _RefillDetailsPageState extends State<RefillDetailsPage> {
     _loadUserSavedLocation();
     if (!widget.isEmergencyContact) {
       _getCurrentDeviceLocation(); // Only for regular users
-        _loadCurrentUserRole();
+      _loadCurrentUserRole();
     }
   }
 
   bool? isCurrentUserEmergency;
 
-Future<void> _loadCurrentUserRole() async {
+
+  Future<void> _loadCurrentUserRole() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final doc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .get();
+    if (doc.exists && doc.data() != null) {
+      setState(() {
+        isCurrentUserEmergency = doc['isEmergency'] ?? false;
+      });
+    }
+  }
+
+  // 📍 Load user location from Firestore
+  Future<void> _loadUserSavedLocation() async {
   final user = FirebaseAuth.instance.currentUser;
   if (user == null) return;
 
-  final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
-  if (doc.exists && doc.data() != null) {
+  try {
+    // Get current user's phone number from 'users' collection
+    final userDoc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .get();
+
+    if (!userDoc.exists || userDoc.data() == null) {
+      _showError("User document not found.");
+      return;
+    }
+
+    final currentUserPhone = userDoc['phone']; 
+    print("User phone: $currentUserPhone");
+
+    // Use phone number to get emergency contact location
+    final contactDoc = await FirebaseFirestore.instance
+        .collection('emergencyContacts')
+        .doc(currentUserPhone)
+        .get();
+
+    if (!contactDoc.exists || contactDoc.data() == null) {
+      _showError("Emergency contact not found.");
+      return;
+    }
+
+    double lat = double.tryParse(contactDoc['latitude'].toString()) ?? 0.0;
+    double lng = double.tryParse(contactDoc['longitude'].toString()) ?? 0.0;
+
+    if (lat == 0.0 && lng == 0.0) {
+      _showError("Invalid coordinates.");
+      return;
+    }
+
     setState(() {
-      isCurrentUserEmergency = doc['isEmergency'] ?? false;
+      patientLocation = LatLng(lat, lng);
     });
+
+    print("Loaded location: $lat, $lng");
+
+  } catch (e) {
+    _showError("Error loading location: $e");
   }
 }
 
 
-  // 📍 Load user location from Firestore
-  Future<void> _loadUserSavedLocation() async {
-    try {
-      DocumentSnapshot userDoc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(widget.userId)
-          .get();
-
-      var location = userDoc['location'];
-      double lat = location['latitude'];
-      double lng = location['longitude'];
-
-      setState(() {
-        _userSavedLocation = LatLng(lat, lng);
-      });
-
-      print("User location loaded: $lat, $lng");
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to load user location: $e')),
-        );
-      }
-    }
-  }
 
   // 📍 Get current device location
   Future<void> _getCurrentDeviceLocation() async {
@@ -102,14 +129,16 @@ Future<void> _loadCurrentUserRole() async {
 
   // 🔎 Open Google Maps near user (saved) location
   Future<void> _openUserLocationInMaps() async {
-    String url =
-        "https://www.google.com/maps/search/pharmacy/@${_userSavedLocation.latitude},${_userSavedLocation.longitude},14z";
+    String url = "https://www.google.com/maps/search/pharmacy/@${patientLocation.latitude},${patientLocation.longitude},17z";
 
-    if (await canLaunchUrl(Uri.parse(url))) {
-      await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+  Uri uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
     } else {
       _showError('Could not open Google Maps');
     }
+    print(
+        "patientlocation: ${patientLocation.latitude},${patientLocation.longitude}");
   }
 
   // 🔎 Open Google Maps near current device location
@@ -140,8 +169,8 @@ Future<void> _loadCurrentUserRole() async {
   @override
   Widget build(BuildContext context) {
     LatLng mapCenter = widget.isEmergencyContact
-        ? _userSavedLocation
-        : (_currentDeviceLocation ?? _userSavedLocation);
+        ? patientLocation
+        : (_currentDeviceLocation ?? patientLocation);
 
     return Scaffold(
       appBar: AppBar(
@@ -156,10 +185,10 @@ Future<void> _loadCurrentUserRole() async {
               child: Image.asset("images/drugs.png", width: 100, height: 100),
             ),
             const SizedBox(height: 20),
-
             Card(
               elevation: 4,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(
@@ -173,20 +202,20 @@ Future<void> _loadCurrentUserRole() async {
                         "${widget.medData["currentInventory"] ?? "0"} ${widget.medData["unit"] ?? ""}"),
                     _buildDetailRow(Icons.access_time, "Reminder Time",
                         widget.medData["reminderTimes"] ?? "Not set"),
-                    _buildDetailRow(Icons.date_range, "Refill When Inventory <= ",
+                    _buildDetailRow(
+                        Icons.date_range,
+                        "Refill When Inventory <= ",
                         "${widget.medData["remindMeWhen"] ?? "0"} ${widget.medData["unit"] ?? ""}"),
                   ],
                 ),
               ),
             ),
             const SizedBox(height: 20),
-
             const Text(
               "Find a Nearby Pharmacy",
               style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 10),
-
             SizedBox(
               height: 200,
               child: ClipRRect(
@@ -214,7 +243,6 @@ Future<void> _loadCurrentUserRole() async {
               ),
             ),
             const SizedBox(height: 10),
-
             if (isCurrentUserEmergency == false)
               Center(
                 child: ElevatedButton.icon(
@@ -223,7 +251,6 @@ Future<void> _loadCurrentUserRole() async {
                   label: const Text("Search Near My Location"),
                 ),
               ),
-
             if (isCurrentUserEmergency == true)
               Center(
                 child: ElevatedButton.icon(
