@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -9,6 +10,7 @@ class RefillDetailsPage extends StatefulWidget {
   final Map<String, dynamic> medData; // بيانات الدواء
   final String userId; // UID of the original user (patient)
   final bool isEmergencyContact; // ← NEW: role flag
+  
 
   const RefillDetailsPage({
     Key? key,
@@ -25,6 +27,7 @@ class _RefillDetailsPageState extends State<RefillDetailsPage> {
   LatLng _userSavedLocation = const LatLng(0.0, 0.0);
   LatLng? _currentDeviceLocation;
   late GoogleMapController _mapController;
+  
 
   @override
   void initState() {
@@ -32,8 +35,24 @@ class _RefillDetailsPageState extends State<RefillDetailsPage> {
     _loadUserSavedLocation();
     if (!widget.isEmergencyContact) {
       _getCurrentDeviceLocation(); // Only for regular users
+        _loadCurrentUserRole();
     }
   }
+
+  bool? isCurrentUserEmergency;
+
+Future<void> _loadCurrentUserRole() async {
+  final user = FirebaseAuth.instance.currentUser;
+  if (user == null) return;
+
+  final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+  if (doc.exists && doc.data() != null) {
+    setState(() {
+      isCurrentUserEmergency = doc['isEmergency'] ?? false;
+    });
+  }
+}
+
 
   // 📍 Load user location from Firestore
   Future<void> _loadUserSavedLocation() async {
@@ -196,7 +215,7 @@ class _RefillDetailsPageState extends State<RefillDetailsPage> {
             ),
             const SizedBox(height: 10),
 
-            if (!widget.isEmergencyContact)
+            if (isCurrentUserEmergency == false)
               Center(
                 child: ElevatedButton.icon(
                   onPressed: _openCurrentLocationInMaps,
@@ -205,7 +224,7 @@ class _RefillDetailsPageState extends State<RefillDetailsPage> {
                 ),
               ),
 
-            if (widget.isEmergencyContact)
+            if (isCurrentUserEmergency == true)
               Center(
                 child: ElevatedButton.icon(
                   onPressed: _openUserLocationInMaps,
