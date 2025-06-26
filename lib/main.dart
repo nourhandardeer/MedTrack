@@ -13,7 +13,6 @@ import 'package:medtrack/services/notification_service.dart';
 import 'package:medtrack/services/theme_provider.dart';
 import 'package:medtrack/pages/setting/PinVerificationPage.dart'; // Import the PIN verification page
 import 'package:cloudinary_url_gen/cloudinary.dart';
-//import 'package:cloudinary_flutter/image/cld_image.dart';
 import 'package:cloudinary_flutter/cloudinary_context.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 

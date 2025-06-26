@@ -177,7 +177,12 @@ class _RefillsPageState extends State<RefillsPage> {
                       context,
                       MaterialPageRoute(
                         builder: (context) =>
-                            RefillDetailsPage(medData: medDataWithLocation),
+                            RefillDetailsPage(medData: medDataWithLocation
+                                 , userId: userId
+                                       ,isEmergencyContact: false, // ← Because this is for the normal user
+
+
+                            ),
                       ),
                     );
                   },
