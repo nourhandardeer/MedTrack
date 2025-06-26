@@ -61,6 +61,8 @@ class EmergencyContactHelper {
     try {
       Position position = await Geolocator.getCurrentPosition(
           desiredAccuracy: LocationAccuracy.high);
+print("User location updated: ${position.latitude}, ${position.longitude}");
+  print("Contact will be added with location: ${position.latitude}, ${position.longitude}");
 
       UserLocationHolder.setLocation(position.latitude, position.longitude);
 
