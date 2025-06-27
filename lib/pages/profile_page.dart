@@ -130,12 +130,12 @@ class _ProfilePageState extends State<ProfilePage> {
       _showSnackBar("Error checking emergency contact status: $e");
     }
   }
-
   void _deleteEmergencyContact(Map<String, dynamic> contact) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
     try {
+      // Delete from user's subcollection
       await FirebaseFirestore.instance
           .collection('users')
           .doc(user.uid)
@@ -143,6 +143,20 @@ class _ProfilePageState extends State<ProfilePage> {
           .doc(contact['id'])
           .delete();
 
+      // Delete from top-level emergencyContacts collection (using phone as ID)
+      final String? phone = contact['phone'];
+      if (phone != null && phone.isNotEmpty) {
+        final emergencyRef = FirebaseFirestore.instance
+            .collection('emergencyContacts')
+            .doc(phone);
+        final emergencyDoc = await emergencyRef.get();
+
+        if (emergencyDoc.exists) {
+          await emergencyRef.delete();
+        }
+      }
+
+      // Update UI
       setState(() {
         _emergencyContacts.remove(contact);
       });
@@ -151,6 +165,28 @@ class _ProfilePageState extends State<ProfilePage> {
       _showSnackBar("Error deleting contact: $e");
     }
   }
+
+
+  // void _deleteEmergencyContact(Map<String, dynamic> contact) async {
+  //   final user = FirebaseAuth.instance.currentUser;
+  //   if (user == null) return;
+  //
+  //   try {
+  //     await FirebaseFirestore.instance
+  //         .collection('users')
+  //         .doc(user.uid)
+  //         .collection('emergencyContacts')
+  //         .doc(contact['id'])
+  //         .delete();
+  //
+  //     setState(() {
+  //       _emergencyContacts.remove(contact);
+  //     });
+  //     _showSnackBar("Contact deleted successfully.");
+  //   } catch (e) {
+  //     _showSnackBar("Error deleting contact: $e");
+  //   }
+  // }
 
   void _showSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(

@@ -237,7 +237,6 @@ class _SettingsPageState extends State<SettingsPage> {
       ),
     );
   }
-
   Future<void> deleteAccountAndData(String password) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
@@ -245,83 +244,69 @@ class _SettingsPageState extends State<SettingsPage> {
     final userId = user.uid;
 
     try {
+      // --- Re-authenticate
       final credential = EmailAuthProvider.credential(
         email: user.email!,
         password: password,
       );
       await user.reauthenticateWithCredential(credential);
 
-      final userDocRef =
-          FirebaseFirestore.instance.collection('users').doc(userId);
+      final userDocRef = FirebaseFirestore.instance.collection('users').doc(userId);
       final userDoc = await userDocRef.get();
       final userData = userDoc.data();
+
+      final isEmergency = userData?['isEmergency'] == true;
       final phone = userData?['phone'];
 
-      if (phone != null && phone.toString().isNotEmpty) {
-        final contactsQuery = await userDocRef
-            .collection('emergencyContacts')
-            .where('phone', isEqualTo: phone)
-            .get();
+      if (isEmergency) {
+        // --- Emergency contact: only delete their user doc and emergencyContacts/{phone}
+        if (phone != null && phone.toString().isNotEmpty) {
+          final emergencyRef = FirebaseFirestore.instance
+              .collection('emergencyContacts')
+              .doc(phone.toString());
 
-        for (final doc in contactsQuery.docs) {
-          await doc.reference.delete();
-        }
-      }
-
-      final medsTakenDocs = await userDocRef.collection('medsTaken').get();
-      for (final doc in medsTakenDocs.docs) {
-        final data = doc.data();
-        final List<dynamic>? linkedUserIds = data['linkedUserIds'];
-
-        if (linkedUserIds != null && linkedUserIds.contains(userId)) {
-          await doc.reference.update({
-            'linkedUserIds': FieldValue.arrayRemove([userId]),
-          });
-
-          final updatedDoc = await doc.reference.get();
-          final updatedLinkedUserIds = updatedDoc.data()?['linkedUserIds'];
-          if (updatedLinkedUserIds == null || updatedLinkedUserIds.isEmpty) {
-            await doc.reference.delete();
+          final emergencyDoc = await emergencyRef.get();
+          if (emergencyDoc.exists) {
+            await emergencyRef.delete();
           }
-        } else {
+        }
+
+        // Delete user document
+        await userDocRef.delete();
+
+        // Delete Firebase Auth account
+        await user.delete();
+
+        return;
+      }
+
+      // --- Normal patient: delete all user data
+      // Delete subcollections (medsTaken, emergencyContacts)
+      final subcollections = ['medsTaken', 'emergencyContacts'];
+      for (final subcollection in subcollections) {
+        final subDocs = await userDocRef.collection(subcollection).get();
+        for (final doc in subDocs.docs) {
           await doc.reference.delete();
         }
       }
 
-      await userDocRef.delete();
-
-      if (phone != null && phone.toString().isNotEmpty) {
-        final emergencyRef = FirebaseFirestore.instance
-            .collection('emergencyContacts')
-            .doc(phone.toString());
-        final emergencyDoc = await emergencyRef.get();
-        if (emergencyDoc.exists) {
-          await emergencyRef.delete();
-        }
-      }
-
+      // Delete from top-level meds, doctors, appointments
       final topLevelCollections = ['meds', 'doctors', 'appointments'];
       for (final collectionName in topLevelCollections) {
-        final querySnapshot =
-            await FirebaseFirestore.instance.collection(collectionName).get();
+        final querySnapshot = await FirebaseFirestore.instance
+            .collection(collectionName)
+            .where('linkedUserIds', arrayContains: userId)
+            .get();
+
         for (final doc in querySnapshot.docs) {
-          final data = doc.data();
-          final List<dynamic>? linkedUserIds = data['linkedUserIds'];
-
-          if (linkedUserIds != null && linkedUserIds.contains(userId)) {
-            await doc.reference.update({
-              'linkedUserIds': FieldValue.arrayRemove([userId]),
-            });
-
-            final updatedDoc = await doc.reference.get();
-            final updatedLinkedUserIds = updatedDoc.data()?['linkedUserIds'];
-            if (updatedLinkedUserIds == null || updatedLinkedUserIds.isEmpty) {
-              await doc.reference.delete();
-            }
-          }
+          await doc.reference.delete();
         }
       }
 
+      // Delete user document
+      await userDocRef.delete();
+
+      // Delete Firebase Auth account
       await user.delete();
     } on FirebaseAuthException catch (e) {
       if (e.code == 'requires-recent-login') {
@@ -332,7 +317,191 @@ class _SettingsPageState extends State<SettingsPage> {
     } catch (e) {
       throw Exception('Unexpected error: $e');
     }
-  }
+
+}
+
+  // Future<void> deleteAccountAndData(String password) async {
+  //   final user = FirebaseAuth.instance.currentUser;
+  //   if (user == null) return;
+  //
+  //   final userId = user.uid;
+  //
+  //   try {
+  //     final credential = EmailAuthProvider.credential(
+  //       email: user.email!,
+  //       password: password,
+  //     );
+  //     await user.reauthenticateWithCredential(credential);
+  //
+  //     final userDocRef =
+  //     FirebaseFirestore.instance.collection('users').doc(userId);
+  //     final userDoc = await userDocRef.get();
+  //     final userData = userDoc.data();
+  //     final phone = userData?['phone'];
+  //
+  //     // Delete emergency contacts stored under user
+  //     if (phone != null && phone.toString().isNotEmpty) {
+  //       final contactsQuery = await userDocRef
+  //           .collection('emergencyContacts')
+  //           .where('phone', isEqualTo: phone)
+  //           .get();
+  //
+  //       for (final doc in contactsQuery.docs) {
+  //         await doc.reference.delete();
+  //       }
+  //     }
+  //
+  //     // Delete medsTaken subcollection documents
+  //     final medsTakenDocs = await userDocRef.collection('medsTaken').get();
+  //     for (final doc in medsTakenDocs.docs) {
+  //       final data = doc.data();
+  //       final List<dynamic>? linkedUserIds = data['linkedUserIds'];
+  //
+  //       if (linkedUserIds != null && linkedUserIds.contains(userId)) {
+  //         await doc.reference.update({
+  //           'linkedUserIds': FieldValue.arrayRemove([userId]),
+  //         });
+  //       }
+  //
+  //       // Always delete the document
+  //       await doc.reference.delete();
+  //     }
+  //
+  //     // Delete main user document
+  //     await userDocRef.delete();
+  //
+  //     // Delete from global emergencyContacts/{phone}
+  //     if (phone != null && phone.toString().isNotEmpty) {
+  //       final emergencyRef = FirebaseFirestore.instance
+  //           .collection('emergencyContacts')
+  //           .doc(phone.toString());
+  //       final emergencyDoc = await emergencyRef.get();
+  //       if (emergencyDoc.exists) {
+  //         await emergencyRef.delete();
+  //       }
+  //     }
+  //
+  //     // Delete meds, doctors, appointments linked to this user — regardless of linkedUserIds
+  //     final topLevelCollections = ['meds', 'doctors', 'appointments'];
+  //     for (final collectionName in topLevelCollections) {
+  //       final querySnapshot = await FirebaseFirestore.instance
+  //           .collection(collectionName)
+  //           .where('linkedUserIds', arrayContains: userId)
+  //           .get();
+  //
+  //       for (final doc in querySnapshot.docs) {
+  //         await doc.reference.delete(); // Delete the document regardless of remaining users
+  //       }
+  //     }
+  //
+  //     // Finally delete the user account
+  //     await user.delete();
+  //   } on FirebaseAuthException catch (e) {
+  //     if (e.code == 'requires-recent-login') {
+  //       throw Exception('Please log in again to delete your account.');
+  //     } else {
+  //       throw Exception('Failed to delete account: ${e.message}');
+  //     }
+  //   } catch (e) {
+  //     throw Exception('Unexpected error: $e');
+  //   }
+  // }
+
+  // Future<void> deleteAccountAndData(String password) async {
+  //   final user = FirebaseAuth.instance.currentUser;
+  //   if (user == null) return;
+  //
+  //   final userId = user.uid;
+  //
+  //   try {
+  //     final credential = EmailAuthProvider.credential(
+  //       email: user.email!,
+  //       password: password,
+  //     );
+  //     await user.reauthenticateWithCredential(credential);
+  //
+  //     final userDocRef =
+  //         FirebaseFirestore.instance.collection('users').doc(userId);
+  //     final userDoc = await userDocRef.get();
+  //     final userData = userDoc.data();
+  //     final phone = userData?['phone'];
+  //
+  //     if (phone != null && phone.toString().isNotEmpty) {
+  //       final contactsQuery = await userDocRef
+  //           .collection('emergencyContacts')
+  //           .where('phone', isEqualTo: phone)
+  //           .get();
+  //
+  //       for (final doc in contactsQuery.docs) {
+  //         await doc.reference.delete();
+  //       }
+  //     }
+  //
+  //     final medsTakenDocs = await userDocRef.collection('medsTaken').get();
+  //     for (final doc in medsTakenDocs.docs) {
+  //       final data = doc.data();
+  //       final List<dynamic>? linkedUserIds = data['linkedUserIds'];
+  //
+  //       if (linkedUserIds != null && linkedUserIds.contains(userId)) {
+  //         await doc.reference.update({
+  //           'linkedUserIds': FieldValue.arrayRemove([userId]),
+  //         });
+  //
+  //         final updatedDoc = await doc.reference.get();
+  //         final updatedLinkedUserIds = updatedDoc.data()?['linkedUserIds'];
+  //         if (updatedLinkedUserIds == null || updatedLinkedUserIds.isEmpty) {
+  //           await doc.reference.delete();
+  //         }
+  //       } else {
+  //         await doc.reference.delete();
+  //       }
+  //     }
+  //
+  //     await userDocRef.delete();
+  //
+  //     if (phone != null && phone.toString().isNotEmpty) {
+  //       final emergencyRef = FirebaseFirestore.instance
+  //           .collection('emergencyContacts')
+  //           .doc(phone.toString());
+  //       final emergencyDoc = await emergencyRef.get();
+  //       if (emergencyDoc.exists) {
+  //         await emergencyRef.delete();
+  //       }
+  //     }
+  //
+  //     final topLevelCollections = ['meds', 'doctors', 'appointments'];
+  //     for (final collectionName in topLevelCollections) {
+  //       final querySnapshot =
+  //           await FirebaseFirestore.instance.collection(collectionName).get();
+  //       for (final doc in querySnapshot.docs) {
+  //         final data = doc.data();
+  //         final List<dynamic>? linkedUserIds = data['linkedUserIds'];
+  //
+  //         if (linkedUserIds != null && linkedUserIds.contains(userId)) {
+  //           await doc.reference.update({
+  //             'linkedUserIds': FieldValue.arrayRemove([userId]),
+  //           });
+  //
+  //           final updatedDoc = await doc.reference.get();
+  //           final updatedLinkedUserIds = updatedDoc.data()?['linkedUserIds'];
+  //           if (updatedLinkedUserIds == null || updatedLinkedUserIds.isEmpty) {
+  //             await doc.reference.delete();
+  //           }
+  //         }
+  //       }
+  //     }
+  //
+  //     await user.delete();
+  //   } on FirebaseAuthException catch (e) {
+  //     if (e.code == 'requires-recent-login') {
+  //       throw Exception('Please log in again to delete your account.');
+  //     } else {
+  //       throw Exception('Failed to delete account: ${e.message}');
+  //     }
+  //   } catch (e) {
+  //     throw Exception('Unexpected error: $e');
+  //   }
+  // }
 
   // Function to show the Security options dialog
   void _showSecurityOptions(BuildContext context) {

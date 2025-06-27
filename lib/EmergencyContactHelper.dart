@@ -1,94 +1,195 @@
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import '../services/UserLocationHolder.dart';
+import '../services/PhoneValidator.dart';
 
 class EmergencyContactHelper {
   static Future<void> EmergencyContactDialog(
-    BuildContext context,
-    Function(Map<String, String>) onContactAdded,
-  ) {
+      BuildContext context,
+      Function(Map<String, String>) onContactAdded,
+      ) {
     TextEditingController nameController = TextEditingController();
     TextEditingController phoneController = TextEditingController();
+
+    final _formKey = GlobalKey<FormState>();
 
     return showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: Text("Add Emergency Contact"),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameController,
-                decoration: InputDecoration(labelText: "Name"),
-              ),
-              TextField(
-                controller: phoneController,
-                decoration: InputDecoration(labelText: "Phone"),
-                keyboardType: TextInputType.phone,
-              ),
-            ],
+          title: const Text("Add Emergency Contact"),
+          content: Form(
+            key: _formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: nameController,
+                  decoration: const InputDecoration(labelText: "Name"),
+                  validator: (value) =>
+                  value == null || value.trim().isEmpty ? 'Required' : null,
+                ),
+                TextFormField(
+                  controller: phoneController,
+                  decoration: const InputDecoration(labelText: "Phone"),
+                  keyboardType: TextInputType.phone,
+                  validator: PhoneValidator.validatePhoneNumber,
+                ),
+              ],
+            ),
           ),
           actions: [
-           TextButton(
-  onPressed: () async {
-    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Please enable location services")),
-      );
-      return;
-    }
+            TextButton(
+              onPressed: () async {
+                if (!_formKey.currentState!.validate()) return;
 
-    LocationPermission permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Location permission denied")),
-        );
-        return;
-      }
-    }
+                bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+                if (!serviceEnabled) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("Please enable location services")),
+                  );
+                  return;
+                }
 
-    if (permission == LocationPermission.deniedForever) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Location permission permanently denied")),
-      );
-      return;
-    }
+                LocationPermission permission = await Geolocator.checkPermission();
+                if (permission == LocationPermission.denied) {
+                  permission = await Geolocator.requestPermission();
+                  if (permission == LocationPermission.denied) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text("Location permission denied")),
+                    );
+                    return;
+                  }
+                }
 
-    try {
-      Position position = await Geolocator.getCurrentPosition(
-          desiredAccuracy: LocationAccuracy.high);
-print("User location updated: ${position.latitude}, ${position.longitude}");
-  print("Contact will be added with location: ${position.latitude}, ${position.longitude}");
+                if (permission == LocationPermission.deniedForever) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("Location permission permanently denied")),
+                  );
+                  return;
+                }
 
-      UserLocationHolder.setLocation(position.latitude, position.longitude);
+                try {
+                  Position position = await Geolocator.getCurrentPosition(
+                    desiredAccuracy: LocationAccuracy.high,
+                  );
 
-      Map<String, String> newContact = {
-        "name": nameController.text,
-        "phone": phoneController.text,
-        "latitude": position.latitude.toString(),
-        "longitude": position.longitude.toString(),
-      };
+                  UserLocationHolder.setLocation(position.latitude, position.longitude);
 
-      onContactAdded(newContact);
-      Navigator.pop(context);
-    } catch (e) {
-      Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Failed to get location")),
-      );
-    }
-  },
-  child: Text("Add"),
-),
+                  Map<String, String> newContact = {
+                    "name": nameController.text,
+                    "phone": phoneController.text,
+                    "latitude": position.latitude.toString(),
+                    "longitude": position.longitude.toString(),
+                  };
 
-
+                  onContactAdded(newContact);
+                  Navigator.pop(context);
+                } catch (e) {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("Failed to get location")),
+                  );
+                }
+              },
+              child: const Text("Add"),
+            ),
           ],
         );
       },
     );
   }
 }
+
+// import 'package:flutter/material.dart';
+// import 'package:geolocator/geolocator.dart';
+// import '../services/UserLocationHolder.dart';
+//
+// class EmergencyContactHelper {
+//   static Future<void> EmergencyContactDialog(
+//     BuildContext context,
+//     Function(Map<String, String>) onContactAdded,
+//   ) {
+//     TextEditingController nameController = TextEditingController();
+//     TextEditingController phoneController = TextEditingController();
+//
+//     return showDialog(
+//       context: context,
+//       builder: (context) {
+//         return AlertDialog(
+//           title: Text("Add Emergency Contact"),
+//           content: Column(
+//             mainAxisSize: MainAxisSize.min,
+//             children: [
+//               TextField(
+//                 controller: nameController,
+//                 decoration: InputDecoration(labelText: "Name"),
+//               ),
+//               TextField(
+//                 controller: phoneController,
+//                 decoration: InputDecoration(labelText: "Phone"),
+//                 keyboardType: TextInputType.phone,
+//               ),
+//             ],
+//           ),
+//           actions: [
+//            TextButton(
+//   onPressed: () async {
+//     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+//     if (!serviceEnabled) {
+//       ScaffoldMessenger.of(context).showSnackBar(
+//         SnackBar(content: Text("Please enable location services")),
+//       );
+//       return;
+//     }
+//
+//     LocationPermission permission = await Geolocator.checkPermission();
+//     if (permission == LocationPermission.denied) {
+//       permission = await Geolocator.requestPermission();
+//       if (permission == LocationPermission.denied) {
+//         ScaffoldMessenger.of(context).showSnackBar(
+//           SnackBar(content: Text("Location permission denied")),
+//         );
+//         return;
+//       }
+//     }
+//
+//     if (permission == LocationPermission.deniedForever) {
+//       ScaffoldMessenger.of(context).showSnackBar(
+//         SnackBar(content: Text("Location permission permanently denied")),
+//       );
+//       return;
+//     }
+//
+//     try {
+//       Position position = await Geolocator.getCurrentPosition(
+//           desiredAccuracy: LocationAccuracy.high);
+//
+//       UserLocationHolder.setLocation(position.latitude, position.longitude);
+//
+//       Map<String, String> newContact = {
+//         "name": nameController.text,
+//         "phone": phoneController.text,
+//         "latitude": position.latitude.toString(),
+//         "longitude": position.longitude.toString(),
+//       };
+//
+//       onContactAdded(newContact);
+//       Navigator.pop(context);
+//     } catch (e) {
+//       Navigator.pop(context);
+//       ScaffoldMessenger.of(context).showSnackBar(
+//         SnackBar(content: Text("Failed to get location")),
+//       );
+//     }
+//   },
+//   child: Text("Add"),
+// ),
+//
+//
+//           ],
+//         );
+//       },
+//     );
+//   }
+// }
