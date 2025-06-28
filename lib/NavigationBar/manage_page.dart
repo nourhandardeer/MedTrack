@@ -126,7 +126,7 @@ class _ManagePageState extends State<ManagePage> {
           return const Center(child: CircularProgressIndicator());
         }
         if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
-          return  Center(child: Text(AppLocalizations.of(context)!.noDoctorsFound));
+          return _buildEmptyState(context);
         }
 
         final doctors = snapshot.data!;
@@ -358,7 +358,7 @@ class _ManagePageState extends State<ManagePage> {
               },
             ),
             ListTile(
-              leading: const Icon(FontAwesomeIcons.userDoctor),
+              leading: const Icon(FontAwesomeIcons.userDoctor, color: Colors.blue),
               title: Text(AppLocalizations.of(context)!.addDoctor),
               onTap: () {
                 Navigator.pop(context);

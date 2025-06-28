@@ -91,6 +91,17 @@ class _AddAppointmentState extends State<AddAppointment> {
         selectedTime!.hour,
         selectedTime!.minute,
       );
+      await _firestore.collection('appointments').add({
+        'doctorName': doctorNameController.text.trim(),
+        'doctorPhone': doctorPhoneController.text.trim(),
+        'specialty': specialtyController.text.trim(),
+        'location': locationController.text.trim(),
+        'notes': notesController.text.trim(),
+        'appointmentDate': DateFormat('yyyy-MM-dd').format(selectedDate!),
+        'appointmentTime': selectedTime!.format(context),
+        'linkedUserIds': [user.uid],
+        'timestamp': FieldValue.serverTimestamp(), // for sorting if needed
+      });
 
       // Schedule notification 60 minutes before appointment
       DateTime today = DateTime.now();
@@ -118,6 +129,7 @@ class _AddAppointmentState extends State<AddAppointment> {
       } else {
   print("Notification not scheduled because appointment is not today.");
 }
+
 
       Navigator.pop(context);
     } catch (e) {
