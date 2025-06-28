@@ -134,7 +134,6 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
         'age': _ageController.text.trim(),
         'illnesses': _illnessesController.text.trim(),
         'phone': PhoneValidator.normalizePhone(_phone.text.trim()),
-
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -153,6 +152,7 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
       );
     }
   }
+
   void _addEmergencyContact() {
     EmergencyContactHelper.EmergencyContactDialog(context, (newContact) async {
       final user = FirebaseAuth.instance.currentUser;
@@ -160,7 +160,8 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
 
       try {
         // Normalize the phone number
-        String normalizedPhone = PhoneValidator.normalizePhone(newContact["phone"]!);
+        String normalizedPhone =
+            PhoneValidator.normalizePhone(newContact["phone"]!);
         newContact["phone"] = normalizedPhone;
 
         // Store under user's emergencyContacts subcollection
@@ -200,38 +201,49 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
 
     return Scaffold(
       appBar: AppBar(title: Text(AppLocalizations.of(context)!.profileSetup)),
-      body: Padding(
-        padding: EdgeInsets.all(15.0),
+      resizeToAvoidBottomInset: true,
+      body: SingleChildScrollView(
+        padding: EdgeInsets.all(15.0).copyWith(
+          bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+        ),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            GestureDetector(
-              onTap: pickAndUploadProfileImage,
-              child: _isUploadingImage
-                  ? CircularProgressIndicator()
-                  : CircleAvatar(
-                      radius: 60,
-                      backgroundImage: profileImage,
-                      backgroundColor: Colors.transparent,
-                    ),
+            Center(
+              child: GestureDetector(
+                onTap: pickAndUploadProfileImage,
+                child: _isUploadingImage
+                    ? CircularProgressIndicator()
+                    : CircleAvatar(
+                        radius: 60,
+                        backgroundImage: profileImage,
+                        backgroundColor: Colors.transparent,
+                      ),
+              ),
             ),
             SizedBox(height: 8),
-            Text(AppLocalizations.of(context)!.addProfilePhoto),
+            Center(child: Text(AppLocalizations.of(context)!.addProfilePhoto)),
             SizedBox(height: 20),
             TextField(
               controller: _ageController,
-              decoration: InputDecoration(labelText: AppLocalizations.of(context)!.age),
-              maxLines: 3,
+              decoration:
+                  InputDecoration(labelText: AppLocalizations.of(context)!.age),
+              maxLines: 1,
+              keyboardType: TextInputType.number,
             ),
             TextField(
               controller: _illnessesController,
-              decoration: InputDecoration(labelText: AppLocalizations.of(context)!.illnesses),
+              decoration: InputDecoration(
+                  labelText: AppLocalizations.of(context)!.illnesses),
               maxLines: 3,
             ),
             SizedBox(height: 20),
             Text(AppLocalizations.of(context)!.emergencyContacts,
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            Expanded(
+            SizedBox(
+              height: 200, // أو أي ارتفاع مناسب
               child: ListView.builder(
+                shrinkWrap: true,
                 itemCount: emergencyContacts.length,
                 itemBuilder: (context, index) {
                   return ListTile(
@@ -254,9 +266,11 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
               child: Text(AppLocalizations.of(context)!.addEmergencyContact),
             ),
             SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _saveProfile,
-              child: Text(AppLocalizations.of(context)!.saveProfile),
+            Center(
+              child: ElevatedButton(
+                onPressed: _saveProfile,
+                child: Text(AppLocalizations.of(context)!.saveProfile),
+              ),
             ),
           ],
         ),
