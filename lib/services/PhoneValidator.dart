@@ -1,22 +1,35 @@
 class PhoneValidator {
   static String? validatePhoneNumber(String? value) {
-    if (value == null || value
-        .trim()
-        .isEmpty) {
+    if (value == null || value.trim().isEmpty) {
       return 'Please enter a phone number';
     }
 
     final input = value.trim();
 
-    // Check for invalid characters (only digits, spaces, and + at the start allowed)
+    // Allow only digits, spaces, and an optional leading +
     if (!RegExp(r'^\+?[0-9\s]+$').hasMatch(input)) {
       return 'Phone number contains invalid characters';
     }
 
-    // Remove all spaces and normalize
+    final normalized = normalizePhone(input);
+
+    // Egyptian format (01xxxxxxxxx)
+    if (RegExp(r'^01[0-9]{9}$').hasMatch(normalized)) {
+      return null;
+    }
+
+    // International format (+XXXXXXXX...)
+    if (RegExp(r'^\+[1-9][0-9]{7,14}$').hasMatch(input.replaceAll(' ', ''))) {
+      return null;
+    }
+
+    return 'Enter a valid phone number';
+  }
+
+  static String normalizePhone(String input) {
     String cleaned = input.replaceAll(RegExp(r'\s+'), '');
 
-    // Normalize Egyptian numbers to local format
+    // Normalize Egyptian formats to local
     if (cleaned.startsWith('+20')) {
       cleaned = '0' + cleaned.substring(3);
     } else if (cleaned.startsWith('0020')) {
@@ -25,16 +38,6 @@ class PhoneValidator {
       cleaned = '0' + cleaned.substring(2);
     }
 
-    // Accept Egyptian format (01xxxxxxxxx)
-    if (RegExp(r'^01[0-9]{9}$').hasMatch(cleaned)) {
-      return null; // Valid Egyptian number
-    }
-
-    // Accept international numbers starting with +
-    if (RegExp(r'^\+[1-9][0-9]{7,14}$').hasMatch(value.replaceAll(' ', ''))) {
-      return null; // Valid international number
-    }
-
-    return 'Enter a valid phone number';
+    return cleaned;
   }
 }

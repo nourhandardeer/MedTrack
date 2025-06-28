@@ -1,87 +1,177 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 
 class RefillDetailsPage extends StatefulWidget {
   final Map<String, dynamic> medData;
+  final String userId; // UID of the original user (patient)
+  final bool isEmergencyContact; 
 
-  const RefillDetailsPage({Key? key, required this.medData}) : super(key: key);
+  const RefillDetailsPage({
+    Key? key,
+    required this.medData,
+    required this.userId,
+    this.isEmergencyContact = false,
+  }) : super(key: key);
 
   @override
   _RefillDetailsPageState createState() => _RefillDetailsPageState();
 }
 
 class _RefillDetailsPageState extends State<RefillDetailsPage> {
-  late LatLng _medLocation;
-  Position? _currentPosition;
+  LatLng patientLocation = const LatLng(0.0, 0.0);
+  LatLng? _currentDeviceLocation;
   late GoogleMapController _mapController;
 
   @override
   void initState() {
     super.initState();
+    _loadUserSavedLocation();
+    if (!widget.isEmergencyContact) {
+      _getCurrentDeviceLocation(); // Only for regular users
+      _loadCurrentUserRole();
+    }
+  }
+
+  bool? isCurrentUserEmergency;
 
 
-    final lat = widget.medData['latitude'] ?? 0.0;
-    final lng = widget.medData['longitude'] ?? 0.0;
-    _medLocation = LatLng(lat, lng);
+  Future<void> _loadCurrentUserRole() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
 
+    final doc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .get();
+    if (doc.exists && doc.data() != null) {
+      setState(() {
+        isCurrentUserEmergency = doc['isEmergency'] ?? false;
+      });
+    }
+  }
 
-    _getCurrentLocation();
+  //  Load user location from Firestore
+  Future<void> _loadUserSavedLocation() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    try {
+      // Get current user's phone number from 'users' collection
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+
+      if (!userDoc.exists || userDoc.data() == null) {
+        _showError("User document not found.");
+        return;
+      }
+
+      final currentUserPhone = userDoc['phone'];
+      print("User phone: $currentUserPhone");
+
+      // Use phone number to get emergency contact location
+      final contactDoc = await FirebaseFirestore.instance
+          .collection('emergencyContacts')
+          .doc(currentUserPhone)
+          .get();
+
+      if (!contactDoc.exists || contactDoc.data() == null) {
+        _showError("Emergency contact not found.");
+        return;
+      }
+
+      double lat = double.tryParse(contactDoc['latitude'].toString()) ?? 0.0;
+      double lng = double.tryParse(contactDoc['longitude'].toString()) ?? 0.0;
+
+      if (lat == 0.0 && lng == 0.0) {
+        _showError("Invalid coordinates.");
+        return;
+      }
+
+      setState(() {
+        patientLocation = LatLng(lat, lng);
+      });
+
+      print("Loaded location: $lat, $lng");
+
+    } catch (e) {
+      _showError("Error loading location: $e");
+    }
   }
 
 
-  Future<void> _getCurrentLocation() async {
+
+  // Get current device location
+  Future<void> _getCurrentDeviceLocation() async {
     try {
       Position position = await Geolocator.getCurrentPosition(
           desiredAccuracy: LocationAccuracy.high);
 
       setState(() {
-        _currentPosition = position;
+        _currentDeviceLocation = LatLng(position.latitude, position.longitude);
       });
 
-
-      final user = FirebaseAuth.instance.currentUser;
-      if (user != null) {
-        await FirebaseFirestore.instance.collection('users').doc(user.uid).update({
-          'location': {
-            'latitude': position.latitude,
-            'longitude': position.longitude,
-          }
-        });
-      }
+      print("Device location: ${position.latitude}, ${position.longitude}");
     } catch (e) {
-
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to get location: $e')),
+          SnackBar(content: Text('Failed to get device location: $e')),
         );
       }
     }
   }
 
+  // Open Google Maps near user (saved) location
+  Future<void> _openUserLocationInMaps() async {
+    String url = "https://www.google.com/maps/search/pharmacy/@${patientLocation.latitude},${patientLocation.longitude},17z";
 
-  Future<void> _openGoogleMaps() async {
+    Uri uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      _showError('Could not open Google Maps');
+    }
+    print(
+        "patientlocation: ${patientLocation.latitude},${patientLocation.longitude}");
+  }
+
+  // 🔎 Open Google Maps near current device location
+  Future<void> _openCurrentLocationInMaps() async {
+    if (_currentDeviceLocation == null) {
+      _showError("Device location not available");
+      return;
+    }
+
     String url =
-        "https://www.google.com/maps/search/pharmacy/@${_medLocation.latitude},${_medLocation.longitude},14z";
+        "https://www.google.com/maps/search/pharmacy/@${_currentDeviceLocation!.latitude},${_currentDeviceLocation!.longitude},14z";
 
     if (await canLaunchUrl(Uri.parse(url))) {
       await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
     } else {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not open Google Maps')),
-        );
-      }
+      _showError('Could not open Google Maps');
     }
   }
 
+  void _showError(String message) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    LatLng mapCenter = widget.isEmergencyContact
+        ? patientLocation
+        : (_currentDeviceLocation ?? patientLocation);
+
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.medData["name"] ?? "Medication Details"),
@@ -91,13 +181,10 @@ class _RefillDetailsPageState extends State<RefillDetailsPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-
             Center(
               child: Image.asset("images/drugs.png", width: 100, height: 100),
             ),
             const SizedBox(height: 20),
-
-
             Card(
               elevation: 4,
               shape: RoundedRectangleBorder(
@@ -111,9 +198,7 @@ class _RefillDetailsPageState extends State<RefillDetailsPage> {
                         widget.medData["name"] ?? "Unknown"),
                     _buildDetailRow(Icons.format_list_numbered, "Dosage",
                         widget.medData["dosage"] ?? "Not specified"),
-                    _buildDetailRow(
-                        Icons.inventory,
-                        "Current Inventory",
+                    _buildDetailRow(Icons.inventory, "Current Inventory",
                         "${widget.medData["currentInventory"] ?? "0"} ${widget.medData["unit"] ?? ""}"),
                     _buildDetailRow(Icons.access_time, "Reminder Time",
                         widget.medData["reminderTimes"] ?? "Not set"),
@@ -126,40 +211,30 @@ class _RefillDetailsPageState extends State<RefillDetailsPage> {
               ),
             ),
             const SizedBox(height: 20),
-
-
             const Text(
               "Find a Nearby Pharmacy",
               style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 10),
-
-
             SizedBox(
               height: 200,
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(12),
                 child: GoogleMap(
                   initialCameraPosition: CameraPosition(
-                    target: _medLocation,
+                    target: mapCenter,
                     zoom: 14,
                   ),
                   markers: {
                     Marker(
-                      markerId: const MarkerId("medLocation"),
-                      position: _medLocation,
+                      markerId: const MarkerId("mainLocation"),
+                      position: mapCenter,
                       infoWindow: InfoWindow(
-                          title: widget.medData["name"] ?? "Medication"),
-                    ),
-                    if (_currentPosition != null)
-                      Marker(
-                        markerId: const MarkerId("currentLocation"),
-                        position: LatLng(
-                            _currentPosition!.latitude, _currentPosition!.longitude),
-                        infoWindow: const InfoWindow(title: "Your Location"),
-                        icon: BitmapDescriptor.defaultMarkerWithHue(
-                            BitmapDescriptor.hueBlue),
+                        title: widget.isEmergencyContact
+                            ? "User Location"
+                            : "Your Location",
                       ),
+                    ),
                   },
                   onMapCreated: (controller) {
                     _mapController = controller;
@@ -168,21 +243,27 @@ class _RefillDetailsPageState extends State<RefillDetailsPage> {
               ),
             ),
             const SizedBox(height: 10),
-
-
-            Center(
-              child: ElevatedButton.icon(
-                onPressed: _openGoogleMaps,
-                icon: const Icon(Icons.map),
-                label: const Text("Search Pharmacies Nearby"),
+            if (isCurrentUserEmergency == false)
+              Center(
+                child: ElevatedButton.icon(
+                  onPressed: _openCurrentLocationInMaps,
+                  icon: const Icon(Icons.my_location),
+                  label: const Text("Search Near My Location"),
+                ),
               ),
-            ),
+            if (isCurrentUserEmergency == true)
+              Center(
+                child: ElevatedButton.icon(
+                  onPressed: _openUserLocationInMaps,
+                  icon: const Icon(Icons.person_pin_circle),
+                  label: const Text("Search Near Patient Location"),
+                ),
+              ),
           ],
         ),
       ),
     );
   }
-
 
   Widget _buildDetailRow(IconData icon, String label, dynamic value) {
     return Padding(
@@ -193,9 +274,7 @@ class _RefillDetailsPageState extends State<RefillDetailsPage> {
           const SizedBox(width: 10),
           Text(
             "$label: ",
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-            ),
+            style: const TextStyle(fontWeight: FontWeight.bold),
           ),
           Expanded(
             child: Text(

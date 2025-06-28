@@ -5,6 +5,9 @@ import 'package:medtrack/auth.dart';
 import 'package:medtrack/home.dart';
 import 'package:medtrack/pages/loggin.dart';
 import 'package:medtrack/pages/profile_setup.dart';
+import 'package:medtrack/services/verifyEmail.dart';
+import '../services/PhoneValidator.dart';
+
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({Key? key}) : super(key: key);
@@ -46,68 +49,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
     return null;
   }
 
-  String? validatePhoneNumber(String? value) {
-    if (value == null || value.trim().isEmpty) {
-      return 'Please enter a phone number';
-    }
-
-    final input = value.trim();
-
-    // Check for invalid characters (only digits, spaces, and + at the start allowed)
-    if (!RegExp(r'^\+?[0-9\s]+$').hasMatch(input)) {
-      return 'Phone number contains invalid characters';
-    }
-
-    // Remove all spaces and normalize
-    String cleaned = input.replaceAll(RegExp(r'\s+'), '');
-
-    // Normalize Egyptian numbers to local format
-    if (cleaned.startsWith('+20')) {
-      cleaned = '0' + cleaned.substring(3);
-    } else if (cleaned.startsWith('0020')) {
-      cleaned = '0' + cleaned.substring(4);
-    } else if (cleaned.startsWith('20')) {
-      cleaned = '0' + cleaned.substring(2);
-    }
-
-    // Accept Egyptian format (01xxxxxxxxx)
-    if (RegExp(r'^01[0-9]{9}$').hasMatch(cleaned)) {
-      return null; // Valid Egyptian number
-    }
-
-    // Accept international numbers starting with +
-    if (RegExp(r'^\+[1-9][0-9]{7,14}$').hasMatch(value.replaceAll(' ', ''))) {
-      return null; // Valid international number
-    }
-
-    return 'Enter a valid phone number';
-  }
-
-  // String? validatePhoneNumber(String? value) {
-  //   if (value == null || value.isEmpty) {
-  //     return 'Please enter a phone number';
-  //   }
-  //
-  //   final cleaned = value.replaceAll(RegExp(r'\D'), '');
-  //   final hasInvalidChars = RegExp(r'[^\d\s\+]').hasMatch(value);
-  //
-  //   if (hasInvalidChars) {
-  //     return 'Phone number contains invalid characters';
-  //   }
-  //
-  //   String phone = cleaned;
-  //
-  //   if (phone.startsWith('20')) {
-  //     phone = phone.replaceFirst('20', '0');
-  //   }
-  //
-  //   if (!RegExp(r'^01[0-9]{9}$').hasMatch(phone)) {
-  //     return 'Enter a valid phone number';
-  //   }
-  //
-  //   return null;
-  // }
-
   Future<void> _register() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -123,74 +64,73 @@ class _SignUpScreenState extends State<SignUpScreen> {
       String password = passwordController.text.trim();
       String rawPhone = phoneController.text.trim();
 
-      // Step 1: Remove spaces
-      String cleaned = rawPhone.replaceAll(RegExp(r'\s+'), '');
 
-      // Step 2: Normalize Egyptian numbers
-      if (cleaned.startsWith('+20')) {
-        cleaned = '0' + cleaned.substring(3);
-      } else if (cleaned.startsWith('0020')) {
-        cleaned = '0' + cleaned.substring(4);
-      } else if (cleaned.startsWith('20')) {
-        cleaned = '0' + cleaned.substring(2);
-      }
-
-      // Step 3: Accept valid Egyptian (01xxxxxxxxx)
-      bool isEgyptian = RegExp(r'^01[0-9]{9}$').hasMatch(cleaned);
-
-      // Step 4: Accept valid international number
-      bool isInternational = RegExp(r'^\+[1-9][0-9]{7,14}$').hasMatch(rawPhone.replaceAll(' ', ''));
-
-      if (!isEgyptian && !isInternational) {
-        errorMessage = 'Enter a valid phone number';
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(errorMessage!)),
-        );
+      final validationError = PhoneValidator.validatePhoneNumber(rawPhone);
+      if (validationError != null) {
+        errorMessage = validationError;
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(errorMessage!)));
         setState(() => _isLoading = false);
         return;
       }
 
-      // Use cleaned phone for storage (Egyptian format) or keep original if international
-      final phoneToStore = isEgyptian ? cleaned : rawPhone.replaceAll(' ', '');
+      final cleaned = PhoneValidator.normalizePhone(rawPhone);
 
+      final isEgyptian = RegExp(r'^01[0-9]{9}$').hasMatch(cleaned);
+
+      final phone = isEgyptian ? cleaned : rawPhone.replaceAll(' ', '');
+
+      // Create the user
       String? errorMsg = await Auth().createUserWithEmailAndPassword(
         firstName: firstName,
         lastName: lastName,
         email: email,
         password: password,
-        phone: phoneToStore,
+        phone: phone,
       );
 
       if (errorMsg == null) {
         User? user = FirebaseAuth.instance.currentUser;
+
         if (user != null) {
-          await checkAndLinkEmergencyContact(user, user.uid, phoneToStore);
-          _onSignupSuccess(user.uid, firstName, lastName, phoneToStore, email, isEmergency);
+          await checkAndLinkEmergencyContact(user, user.uid, phone);
+
+          if (!user.emailVerified) {
+            await user.sendEmailVerification();
+
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => VerifyEmailPage(
+                  user: user,
+                  firstName: firstName,
+                  lastName: lastName,
+                  phone: phone,
+                  email: email,
+                ),
+              ),
+            );
+          } else {
+            // Already verified (in rare case), continue
+            _onSignupSuccess(user.uid, firstName, lastName, phone, email, false);
+          }
         }
       } else {
-        setState(() {
-          errorMessage = errorMsg;
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(errorMessage!)),
-        );
+        errorMessage = errorMsg;
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(errorMessage!)));
       }
+
     } on FirebaseAuthException catch (e) {
       print("Registration error: ${e.code} - ${e.message}");
       setState(() {
         errorMessage = e.message ?? "An unexpected error occurred.";
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(errorMessage!)),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(errorMessage!)));
     } catch (e) {
       print("Unexpected registration error: $e");
       setState(() {
         errorMessage = "An unexpected error occurred.";
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(errorMessage!)),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(errorMessage!)));
     } finally {
       setState(() {
         _isLoading = false;
@@ -198,102 +138,28 @@ class _SignUpScreenState extends State<SignUpScreen> {
     }
   }
 
-
-  // Future<void> _register() async {
-  //   if (!_formKey.currentState!.validate()) return;
-  //
-  //   setState(() {
-  //     _isLoading = true;
-  //     errorMessage = '';
-  //   });
-  //
-  //   try {
-  //     String firstName = firstNameController.text.trim();
-  //     String lastName = lastNameController.text.trim();
-  //     String email = emailController.text.trim();
-  //     String password = passwordController.text.trim();
-  //     String phone = phoneController.text.trim();
-  //
-  //     // Normalize phone (remove +2 or +20 if present, remove all non-digit characters)
-  //     phone = phone.replaceAll(RegExp(r'[^\d]'), ''); // remove spaces, dashes, etc.
-  //     if (phone.startsWith('20')) {
-  //       phone = phone.substring(2);
-  //     } else if (phone.startsWith('2')) {
-  //       phone = phone.substring(1);
-  //     }
-  //
-  //     // Basic phone validation
-  //     if (!RegExp(r'^\d{11}$').hasMatch(phone)) {
-  //       setState(() {
-  //         errorMessage = 'Invalid phone number. It must contain 11 digits.';
-  //       });
-  //       ScaffoldMessenger.of(context).showSnackBar(
-  //         SnackBar(content: Text(errorMessage!)),
-  //       );
-  //       return;
-  //     }
-  //
-  //     String? errorMsg = await Auth().createUserWithEmailAndPassword(
-  //       firstName: firstName,
-  //       lastName: lastName,
-  //       email: email,
-  //       password: password,
-  //       phone: phone,
-  //     );
-  //
-  //     if (errorMsg == null) {
-  //       User? user = FirebaseAuth.instance.currentUser;
-  //       if (user != null) {
-  //         await checkAndLinkEmergencyContact(user, user.uid, phone);
-  //         _onSignupSuccess(user.uid, firstName, lastName, phone, email, isEmergency);
-  //       }
-  //     } else {
-  //       setState(() {
-  //         errorMessage = errorMsg;
-  //       });
-  //       ScaffoldMessenger.of(context).showSnackBar(
-  //         SnackBar(content: Text(errorMessage!)),
-  //       );
-  //     }
-  //   } on FirebaseAuthException catch (e) {
-  //     print("Registration error: ${e.code} - ${e.message}");
-  //     setState(() {
-  //       errorMessage = e.message ?? "An unexpected error occurred.";
-  //     });
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       SnackBar(content: Text(errorMessage!)),
-  //     );
-  //   } catch (e) {
-  //     print("Unexpected registration error: $e");
-  //     setState(() {
-  //       errorMessage = "An unexpected error occurred.";
-  //     });
-  //   } finally {
-  //     setState(() {
-  //       _isLoading = false;
-  //     });
-  //   }
-  // }
-
-
   void _onSignupSuccess(String userId, String firstName, String lastName,
       String phone, String email, bool isEmergency) async {
+    final normalizedPhone = PhoneValidator.normalizePhone(phone);
+
     try {
       // Check if user is an emergency contact
       DocumentSnapshot contactDoc = await FirebaseFirestore.instance
           .collection('emergencyContacts')
-          .doc(phone)
+          .doc(normalizedPhone)
           .get();
 
       if (contactDoc.exists) {
         isEmergency = true;
+
+        // Update user profile and preserve existing fields
         await FirebaseFirestore.instance.collection('users').doc(userId).set({
           'firstName': firstName,
           'lastName': lastName,
-          'phone': phone,
+          'phone': normalizedPhone,
           'email': email,
-          'isEmergency': isEmergency,
-        });
+          'isEmergency': true,
+        }, SetOptions(merge: true));
 
         // Navigate to Home Screen directly for emergency contact
         Navigator.pushReplacement(
@@ -309,13 +175,14 @@ class _SignUpScreenState extends State<SignUpScreen> {
               userId: userId,
               firstName: firstName,
               lastName: lastName,
-              phone: phone,
+              phone: normalizedPhone,
             ),
           ),
         );
       }
     } catch (e) {
       print("Error during post-signup navigation: $e");
+
       // Fallback navigation
       Navigator.pushReplacement(
         context,
@@ -324,18 +191,20 @@ class _SignUpScreenState extends State<SignUpScreen> {
             userId: userId,
             firstName: firstName,
             lastName: lastName,
-            phone: phone,
+            phone: normalizedPhone,
           ),
         ),
       );
     }
   }
+
   Future<void> checkAndLinkEmergencyContact(
       User user, String userId, String phone) async {
+    final normalizedPhone = PhoneValidator.normalizePhone(phone);
     try {
       final contactDoc = await FirebaseFirestore.instance
           .collection('emergencyContacts')
-          .doc(phone)
+          .doc(normalizedPhone)
           .get();
 
       if (contactDoc.exists) {
@@ -344,7 +213,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
         // Save info in emergency contact's user doc
         await FirebaseFirestore.instance.collection('users').doc(userId).set({
           'linkedPatientId': patientId,
-          'isEmergencyContact': true,
+          'isEmergency': true,
         }, SetOptions(merge: true));
 
         // Now update all meds, appointments, and doctors linked to this patient
@@ -442,7 +311,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     phoneController,
                     'Phone',
                     'Enter your phone number',
-                    validator: validatePhoneNumber,
+                    validator: PhoneValidator.validatePhoneNumber,
                     keyboardType: TextInputType.phone,
                   ),
                   if (errorMessage != null && errorMessage!.isNotEmpty)

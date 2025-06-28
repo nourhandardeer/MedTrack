@@ -5,6 +5,8 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 
 import '../EmergencyContactHelper.dart';
+import '../services/PhoneValidator.dart';
+
 
 class EmergencyContactPage extends StatefulWidget {
   const EmergencyContactPage({super.key});
@@ -12,6 +14,7 @@ class EmergencyContactPage extends StatefulWidget {
   @override
   _EmergencyContactPageState createState() => _EmergencyContactPageState();
 }
+
 Map<String, dynamic>? patientLocation;
 
 class _EmergencyContactPageState extends State<EmergencyContactPage> {
@@ -47,13 +50,15 @@ class _EmergencyContactPageState extends State<EmergencyContactPage> {
   }
 
   /// Fetch Linked Patient Data for Emergency Contact
-   Future<void> _fetchLinkedPatientData() async {
+  Future<void> _fetchLinkedPatientData() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
+    final normalizedPhone = PhoneValidator.normalizePhone(user.phoneNumber ?? '');
+
     QuerySnapshot contactQuery = await FirebaseFirestore.instance
         .collection('emergencyContacts')
-        .where('phone', isEqualTo: user.phoneNumber)
+        .where('phone', isEqualTo: normalizedPhone)
         .get();
 
     if (contactQuery.docs.isNotEmpty) {
@@ -67,14 +72,15 @@ class _EmergencyContactPageState extends State<EmergencyContactPage> {
         if (patientDoc.exists) {
           setState(() {
             patientData = patientDoc.data();
-             if (patientData != null && patientData!['location'] != null) {
-            patientLocation = Map<String, dynamic>.from(patientData!['location']);
-          }
+            if (patientData != null && patientData!['location'] != null) {
+              patientLocation = Map<String, dynamic>.from(patientData!['location']);
+            }
           });
         }
       });
     }
   }
+
   /// Add Emergency Contact
   void _addEmergencyContact() {
     EmergencyContactHelper.EmergencyContactDialog(context, (newContact) async {
@@ -82,20 +88,39 @@ class _EmergencyContactPageState extends State<EmergencyContactPage> {
       if (user == null) return;
 
       try {
-        // Store contact under the patient's emergencyContacts collection
-        DocumentReference ref = await FirebaseFirestore.instance
+        // Normalize phone number
+        final normalizedPhone = PhoneValidator.normalizePhone(newContact['phone']!);
+        newContact['phone'] = normalizedPhone;
+
+        // Check if contact already exists in the subcollection
+        QuerySnapshot existing = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .collection('emergencyContacts')
+            .where('phone', isEqualTo: normalizedPhone)
+            .get();
+
+        if (existing.docs.isNotEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("This contact already exists.")),
+          );
+          return;
+        }
+
+        // Save in user's subcollection
+        await FirebaseFirestore.instance
             .collection('users')
             .doc(user.uid)
             .collection('emergencyContacts')
             .add(newContact);
 
-        // Also store a reference under emergencyContacts collection (for lookup)
+        // Save in global emergencyContacts collection
         await FirebaseFirestore.instance
             .collection('emergencyContacts')
-            .doc(newContact["phone"]) // Using email as the document ID
+            .doc(normalizedPhone)
             .set({
           ...newContact,
-          'linkedPatientId': user.uid, // Link this contact to the patient
+          'linkedPatientId': user.uid,
         });
 
         setState(() {
@@ -109,31 +134,37 @@ class _EmergencyContactPageState extends State<EmergencyContactPage> {
     });
   }
 
+
   /// Delete Emergency Contact
   void _deleteEmergencyContact(Map<String, dynamic> contact) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
     try {
+      final normalizedPhone = PhoneValidator.normalizePhone(contact['phone']);
+
+      // Delete from user's subcollection
       QuerySnapshot snapshot = await FirebaseFirestore.instance
           .collection('users')
           .doc(user.uid)
           .collection('emergencyContacts')
-          .where('phone', isEqualTo: contact['phone'])
+          .where('phone', isEqualTo: normalizedPhone)
           .get();
 
       for (var doc in snapshot.docs) {
         await doc.reference.delete();
       }
 
+      // Delete from global emergencyContacts collection
       await FirebaseFirestore.instance
           .collection('emergencyContacts')
-          .doc(contact['phone'])
+          .doc(normalizedPhone)
           .delete();
 
+      // Optional: Delete user account by phone (if you use it elsewhere)
       QuerySnapshot userSnapshot = await FirebaseFirestore.instance
           .collection('users')
-          .where('phone', isEqualTo: contact['phone'])
+          .where('phone', isEqualTo: normalizedPhone)
           .get();
 
       for (var doc in userSnapshot.docs) {
@@ -204,9 +235,7 @@ class _EmergencyContactPageState extends State<EmergencyContactPage> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Expanded(
-              
               child: ListView.builder(
-                
                 itemCount: _emergencyContacts.length,
                 itemBuilder: (context, index) {
                   var contact = _emergencyContacts[index];
@@ -218,7 +247,7 @@ class _EmergencyContactPageState extends State<EmergencyContactPage> {
                     child: ListTile(
                       leading: Icon(Icons.phone, color: Colors.red),
                       title: Text(contact["name"]!, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                      subtitle: Text( '${contact["phone"]}'),
+                      subtitle: Text('${contact["phone"]}'),
                       trailing: IconButton(
                         icon: Icon(Icons.delete, color: Colors.red),
                         onPressed: () => _deleteEmergencyContact(contact),
@@ -229,17 +258,16 @@ class _EmergencyContactPageState extends State<EmergencyContactPage> {
               ),
             ),
             if (patientLocation != null) ...[
-  Text(
-    "Patient Location:",
-    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-  ),
-  Text(
-    "Latitude: ${patientLocation!['latitude']}, Longitude: ${patientLocation!['longitude']}",
-    style: TextStyle(fontSize: 16),
-  ),
-  SizedBox(height: 12),
-],
-
+              Text(
+                "Patient Location:",
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              Text(
+                "Latitude: ${patientLocation!['latitude']}, Longitude: ${patientLocation!['longitude']}",
+                style: TextStyle(fontSize: 16),
+              ),
+              SizedBox(height: 12),
+            ],
             ElevatedButton(
               onPressed: _addEmergencyContact,
               style: ElevatedButton.styleFrom(backgroundColor: Colors.green, padding: EdgeInsets.symmetric(vertical: 12)),

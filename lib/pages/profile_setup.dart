@@ -8,6 +8,7 @@ import 'package:medtrack/home.dart';
 import 'package:http/http.dart' as http;
 
 import '../EmergencyContactHelper.dart';
+import '../services/PhoneValidator.dart';
 
 class ProfileSetupPage extends StatefulWidget {
   final String userId;
@@ -130,7 +131,8 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
         'profileImage': _uploadedImageUrl ?? "images/user.png",
         'age': _ageController.text.trim(),
         'illnesses': _illnessesController.text.trim(),
-        'phone': _phone.text.trim(),
+        'phone': PhoneValidator.normalizePhone(_phone.text.trim()),
+
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -149,26 +151,32 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
       );
     }
   }
-
   void _addEmergencyContact() {
     EmergencyContactHelper.EmergencyContactDialog(context, (newContact) async {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) return;
 
       try {
+        // Normalize the phone number
+        String normalizedPhone = PhoneValidator.normalizePhone(newContact["phone"]!);
+        newContact["phone"] = normalizedPhone;
+
+        // Store under user's emergencyContacts subcollection
         await FirebaseFirestore.instance
             .collection('users')
             .doc(user.uid)
             .collection('emergencyContacts')
             .add(newContact);
 
+        // Store in main emergencyContacts collection
         await FirebaseFirestore.instance
             .collection('emergencyContacts')
-            .doc(newContact["phone"])
+            .doc(normalizedPhone)
             .set({
           ...newContact,
           'linkedPatientId': user.uid,
         });
+
         if (!mounted) return;
 
         setState(() {

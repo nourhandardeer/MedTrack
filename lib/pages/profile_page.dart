@@ -167,27 +167,6 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
 
-  // void _deleteEmergencyContact(Map<String, dynamic> contact) async {
-  //   final user = FirebaseAuth.instance.currentUser;
-  //   if (user == null) return;
-  //
-  //   try {
-  //     await FirebaseFirestore.instance
-  //         .collection('users')
-  //         .doc(user.uid)
-  //         .collection('emergencyContacts')
-  //         .doc(contact['id'])
-  //         .delete();
-  //
-  //     setState(() {
-  //       _emergencyContacts.remove(contact);
-  //     });
-  //     _showSnackBar("Contact deleted successfully.");
-  //   } catch (e) {
-  //     _showSnackBar("Error deleting contact: $e");
-  //   }
-  // }
-
   void _showSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message)),

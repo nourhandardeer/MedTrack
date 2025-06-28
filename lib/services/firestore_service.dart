@@ -2,10 +2,12 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
+import 'PhoneValidator.dart';
 
 class FirestoreService {
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
+
   Future<void> updatePatientLocation() async {
     User? user = _auth.currentUser;
     if (user == null) return;
@@ -47,7 +49,6 @@ class FirestoreService {
       List<String> linkedUsers = await getLinkedUserIds();
       String patientId = linkedUsers.first; // Use first ID as patientId
       print(linkedUsers);
-      // Save data with linkedUserIds array
       DocumentReference docRef = await firestore.collection(collection).add({
         ...data,
         'linkedUserIds': linkedUsers,
@@ -69,38 +70,41 @@ class FirestoreService {
 
   Future<String?> getOriginalPatientId(String emergencyContactPhone) async {
     try {
-      QuerySnapshot querySnapshot = await firestore
+      final normalizedPhone = PhoneValidator.normalizePhone(emergencyContactPhone);
+      final doc = await firestore
           .collection('emergencyContacts')
-          .where('phone', isEqualTo: emergencyContactPhone)
+          .doc(normalizedPhone)
           .get();
 
-      if (querySnapshot.docs.isNotEmpty) {
-        return querySnapshot.docs.first['linkedPatientId'];
+      if (doc.exists) {
+        return doc['linkedPatientId'];
       }
     } catch (e) {
       print("Error fetching original patient ID: $e");
     }
     return null;
   }
+
   Future<List<String>> getLinkedUserIds() async {
     User? user = _auth.currentUser;
     if (user == null) return [];
 
     final Set<String> linkedUserIds = {};
-
     String currentUserId = user.uid;
     linkedUserIds.add(currentUserId);
 
-    // Get phone number of the current user
-    DocumentSnapshot userDoc = await firestore.collection('users').doc(currentUserId).get();
+    DocumentSnapshot userDoc =
+    await firestore.collection('users').doc(currentUserId).get();
     String? phoneNumber = userDoc['phone'];
 
     if (phoneNumber != null && phoneNumber.isNotEmpty) {
-      String? linkedPatientId = await getOriginalPatientId(phoneNumber);
+      String normalizedPhone = PhoneValidator.normalizePhone(phoneNumber);
+      String? linkedPatientId = await getOriginalPatientId(normalizedPhone);
       if (linkedPatientId != null) {
         linkedUserIds.add(linkedPatientId);
       }
     }
+
     List<String> emergencyContacts = await getEmergencyUserIds(currentUserId);
     linkedUserIds.addAll(emergencyContacts);
 
@@ -110,7 +114,6 @@ class FirestoreService {
   Future<List<String>> getEmergencyUserIds(String patientId) async {
     List<String> emergencyContactUserIds = [patientId];
     try {
-      // Fetch emergency contacts from user's subcollection
       QuerySnapshot emergencyContactsSnapshot = await firestore
           .collection('users')
           .doc(patientId)
@@ -118,12 +121,12 @@ class FirestoreService {
           .get();
 
       for (var doc in emergencyContactsSnapshot.docs) {
-        String phoneNumber = doc['phone'];
+        String rawPhone = doc['phone'];
+        String normalizedPhone = PhoneValidator.normalizePhone(rawPhone);
 
-        // Find the user ID of the emergency contact
         QuerySnapshot userSnapshot = await firestore
             .collection('users')
-            .where('phone', isEqualTo: phoneNumber)
+            .where('phone', isEqualTo: normalizedPhone)
             .get();
 
         if (userSnapshot.docs.isNotEmpty) {
@@ -142,6 +145,7 @@ class FirestoreService {
         .where('linkedUserIds', arrayContainsAny: linkedUserIds)
         .get();
   }
+
   Future<List<QueryDocumentSnapshot>> getAppointments(List<String> linkedUserIds) async {
     if (linkedUserIds.isEmpty) return [];
 
@@ -153,33 +157,12 @@ class FirestoreService {
     );
 
     final allDocs = snapshots.expand((s) => s.docs).toList();
-
-    // Deduplicate by document ID
     final uniqueDocs = {
       for (var doc in allDocs) doc.id: doc
     }.values.toList();
 
     return uniqueDocs;
   }
-
-  // Future<List<QueryDocumentSnapshot>> getAppointments(List<String> linkedUserIds) async {
-  //   if (linkedUserIds.isEmpty) {
-  //     print("DEBUG: No linked users found. Skipping database query.");
-  //     return [];
-  //   }
-  //
-  //   List<QuerySnapshot> snapshots = await Future.wait(
-  //     linkedUserIds.map((id) {
-  //       return firestore
-  //           .collection('appointments')
-  //           .where('linkedUserIds', arrayContains: id)
-  //           .get();
-  //     }),
-  //   );
-  //
-  //   // Flatten the results into a single list
-  //   return snapshots.expand((snapshot) => snapshot.docs).toList();
-  // }
 
   Future<List<QueryDocumentSnapshot>> getDoctors(List<String> linkedUserIds) async {
     if (linkedUserIds.isEmpty) return [];
@@ -192,33 +175,12 @@ class FirestoreService {
     );
 
     final allDocs = snapshots.expand((s) => s.docs).toList();
-
-    // Deduplicate by document ID
     final uniqueDocs = {
       for (var doc in allDocs) doc.id: doc
     }.values.toList();
 
     return uniqueDocs;
   }
-
-  // Future<List<QueryDocumentSnapshot>> getDoctors(List<String> linkedUserIds) async {
-  //   if (linkedUserIds.isEmpty) {
-  //     print("DEBUG: No linked users found. Skipping database query.");
-  //     return [];
-  //   }
-  //
-  //   List<QuerySnapshot> snapshots = await Future.wait(
-  //     linkedUserIds.map((id) {
-  //       return firestore
-  //           .collection('doctors')
-  //           .where('linkedUserIds', arrayContains: id)
-  //           .get();
-  //     }),
-  //   );
-  //
-  //   return snapshots.expand((snapshot) => snapshot.docs).toList();
-  // }
-
 
   Future<bool> isEmergencyContact() async {
     final user = FirebaseAuth.instance.currentUser;
@@ -227,26 +189,23 @@ class FirestoreService {
       return false;
     }
 
-    // Fetch phone number from Firestore user doc
     final userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
 
-    final phone = userDoc.data()?['phone'] as String?;
-    if (phone == null || phone.isEmpty) {
-      print("Phone is null or empty from Firestore user doc: $phone");
+    final rawPhone = userDoc.data()?['phone'] as String?;
+    if (rawPhone == null || rawPhone.isEmpty) {
+      print("Phone is null or empty from Firestore user doc: $rawPhone");
       return false;
     }
 
-    print("Checking emergencyContacts for doc id: $phone");
+    final normalizedPhone = PhoneValidator.normalizePhone(rawPhone);
+
+    print("Checking emergencyContacts for doc id: $normalizedPhone");
     final snapshot = await FirebaseFirestore.instance
         .collection('emergencyContacts')
-        .doc(phone)
+        .doc(normalizedPhone)
         .get();
 
     print("Document exists? ${snapshot.exists}");
     return snapshot.exists;
   }
-
-
-
-
 }
