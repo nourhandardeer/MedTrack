@@ -58,18 +58,38 @@ FirestoreService firestore = FirestoreService();
           'isEmergency': isEmergency,
         }, SetOptions(merge: true));
 
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => ProfileSetupPage(
-              userId: refreshedUser.uid,
-              firstName: widget.firstName,
-              lastName: widget.lastName,
-              phone: widget.phone,
-              isEmergency: isEmergency,
+        if (isEmergency) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => HomeScreen()),
+          );
+        } else {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ProfileSetupPage(
+                userId: refreshedUser.uid,
+                firstName: widget.firstName,
+                lastName: widget.lastName,
+                phone: widget.phone,
+                isEmergency: isEmergency,
+              ),
             ),
-          ),
-        );
+          );
+        }
+
+      //  Navigator.pushReplacement(
+        //   context,
+        //   MaterialPageRoute(
+        //     builder: (context) => ProfileSetupPage(
+        //       userId: refreshedUser.uid,
+        //       firstName: widget.firstName,
+        //       lastName: widget.lastName,
+        //       phone: widget.phone,
+        //       isEmergency: isEmergency,
+        //     ),
+        //   ),
+        // );
       }
     });
   }

@@ -208,6 +208,16 @@ class FirestoreService {
     print("Document exists? ${snapshot.exists}");
     return snapshot.exists;
   }
+  Future<bool> isEmergencyContactByPhone(String phone) async {
+    final normalizedPhone = PhoneValidator.normalizePhone(phone);
+    final snapshot = await FirebaseFirestore.instance
+        .collection('emergencyContacts')
+        .doc(normalizedPhone)
+        .get();
+
+    return snapshot.exists;
+  }
+
   Future<bool> checkAndLinkEmergencyContact(
       User user, String userId, String phone) async {
     final normalizedPhone = PhoneValidator.normalizePhone(phone);

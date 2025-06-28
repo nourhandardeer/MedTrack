@@ -12,6 +12,8 @@ import '../services/PhoneValidator.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
+import '../services/checkPhoneNumberUniqueness.dart';
+
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({Key? key}) : super(key: key);
 
@@ -80,8 +82,23 @@ class _SignUpScreenState extends State<SignUpScreen> {
       final cleaned = PhoneValidator.normalizePhone(rawPhone);
 
       final isEgyptian = RegExp(r'^01[0-9]{9}$').hasMatch(cleaned);
-
       final phone = isEgyptian ? cleaned : rawPhone.replaceAll(' ', '');
+      final phoneIsInEmergency = await firestore.isEmergencyContactByPhone(phone);
+
+
+      isEmergency = phoneIsInEmergency;
+
+      if (phoneIsInEmergency) {
+        print("Phone is in emergencyContacts — allowing emergency signup only");
+      }
+
+      final uniquenessError = await checkPhoneNumberUniqueness(phone);
+      if (uniquenessError != null) {
+        errorMessage = uniquenessError;
+        setState(() => _isLoading = false);
+        return;
+      }
+
 
       // Create the user
       String? errorMsg = await Auth().createUserWithEmailAndPassword(
