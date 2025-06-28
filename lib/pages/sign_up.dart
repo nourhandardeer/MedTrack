@@ -5,6 +5,7 @@ import 'package:medtrack/auth.dart';
 import 'package:medtrack/home.dart';
 import 'package:medtrack/pages/loggin.dart';
 import 'package:medtrack/pages/profile_setup.dart';
+import 'package:medtrack/services/firestore_service.dart';
 import 'package:medtrack/services/verifyEmail.dart';
 import '../services/PhoneValidator.dart';
 
@@ -25,6 +26,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   final TextEditingController phoneController = TextEditingController();
+  FirestoreService firestore = FirestoreService();
 
   String? errorMessage = '';
   bool _isLoading = false;
@@ -94,7 +96,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
         User? user = FirebaseAuth.instance.currentUser;
 
         if (user != null) {
-          await checkAndLinkEmergencyContact(user, user.uid, phone);
 
           if (!user.emailVerified) {
             await user.sendEmailVerification();
@@ -112,9 +113,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
               ),
             );
           } else {
-            // Already verified (in rare case), continue
-            _onSignupSuccess(user.uid, firstName, lastName, phone, email, false);
+            bool isEmergency = await firestore.checkAndLinkEmergencyContact(user, user.uid, phone);
+            _onSignupSuccess(user.uid, firstName, lastName, phone, email, isEmergency);
           }
+
         }
       } else {
         errorMessage = errorMsg;
@@ -145,31 +147,23 @@ class _SignUpScreenState extends State<SignUpScreen> {
     final normalizedPhone = PhoneValidator.normalizePhone(phone);
 
     try {
-      // Check if user is an emergency contact
-      DocumentSnapshot contactDoc = await FirebaseFirestore.instance
-          .collection('emergencyContacts')
-          .doc(normalizedPhone)
-          .get();
+      final userRef = FirebaseFirestore.instance.collection('users').doc(userId);
 
-      if (contactDoc.exists) {
-        isEmergency = true;
+      // Update user document and preserve `isEmergency` passed in
+      await userRef.set({
+        'firstName': firstName,
+        'lastName': lastName,
+        'phone': normalizedPhone,
+        'email': email,
+        'isEmergency': isEmergency,
+      }, SetOptions(merge: true));
 
-        // Update user profile and preserve existing fields
-        await FirebaseFirestore.instance.collection('users').doc(userId).set({
-          'firstName': firstName,
-          'lastName': lastName,
-          'phone': normalizedPhone,
-          'email': email,
-          'isEmergency': true,
-        }, SetOptions(merge: true));
-
-        // Navigate to Home Screen directly for emergency contact
+      if (isEmergency) {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => HomeScreen()),
         );
       } else {
-        // Navigate to Profile Setup for normal users
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
@@ -178,6 +172,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
               firstName: firstName,
               lastName: lastName,
               phone: normalizedPhone,
+              isEmergency: isEmergency,
             ),
           ),
         );
@@ -194,55 +189,13 @@ class _SignUpScreenState extends State<SignUpScreen> {
             firstName: firstName,
             lastName: lastName,
             phone: normalizedPhone,
+            isEmergency: isEmergency,
           ),
         ),
       );
     }
   }
 
-  Future<void> checkAndLinkEmergencyContact(
-      User user, String userId, String phone) async {
-    final normalizedPhone = PhoneValidator.normalizePhone(phone);
-    try {
-      final contactDoc = await FirebaseFirestore.instance
-          .collection('emergencyContacts')
-          .doc(normalizedPhone)
-          .get();
-
-      if (contactDoc.exists) {
-        String patientId = contactDoc['linkedPatientId'];
-
-        // Save info in emergency contact's user doc
-        await FirebaseFirestore.instance.collection('users').doc(userId).set({
-          'linkedPatientId': patientId,
-          'isEmergency': true,
-        }, SetOptions(merge: true));
-
-        // Now update all meds, appointments, and doctors linked to this patient
-        await _linkEmergencyToPatientData(patientId, userId);
-      }
-    } catch (e) {
-      print("Link error: $e");
-    }
-  }
-
-  Future<void> _linkEmergencyToPatientData(
-      String patientId, String emergencyContactId) async {
-    final collections = ['meds', 'appointments', 'doctors'];
-
-    for (String collection in collections) {
-      final snapshot = await FirebaseFirestore.instance
-          .collection(collection)
-          .where('linkedUserIds', arrayContains: patientId)
-          .get();
-
-      for (var doc in snapshot.docs) {
-        await doc.reference.update({
-          'linkedUserIds': FieldValue.arrayUnion([emergencyContactId]),
-        });
-      }
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -262,8 +215,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           .textTheme
                           .headlineSmall
                           ?.copyWith(
-                              color: Colors.blue.shade900,
-                              fontWeight: FontWeight.bold)),
+                          color: Colors.blue.shade900,
+                          fontWeight: FontWeight.bold)),
                   const SizedBox(height: 20),
                   Image.asset('images/MedTrack -logo.png',
                       width: 150, height: 150),
@@ -273,14 +226,14 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     AppLocalizations.of(context)!.firstName,
                     'Enter your first name',
                     validator: (value) =>
-                        value?.isEmpty ?? true ? 'Required' : null,
+                    value?.isEmpty ?? true ? 'Required' : null,
                   ),
                   _buildTextFormField(
                     lastNameController,
                     AppLocalizations.of(context)!.lastName,
                     'Enter your last name',
                     validator: (value) =>
-                        value?.isEmpty ?? true ? 'Required' : null,
+                    value?.isEmpty ?? true ? 'Required' : null,
                   ),
                   _buildTextFormField(
                     emailController,
@@ -338,18 +291,18 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       ),
                       child: _isLoading
                           ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            )
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
                           :  Text(
-                              AppLocalizations.of(context)!.signUp,
-                              style:
-                                  TextStyle(fontSize: 16, color: Colors.white),
-                            ),
+                        AppLocalizations.of(context)!.signUp,
+                        style:
+                        TextStyle(fontSize: 16, color: Colors.white),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -378,14 +331,14 @@ class _SignUpScreenState extends State<SignUpScreen> {
   }
 
   Widget _buildTextFormField(
-    TextEditingController controller,
-    String label,
-    String hint, {
-    String? Function(String?)? validator,
-    TextInputType? keyboardType,
-    bool obscureText = false,
-    Widget? suffixIcon,
-  }) {
+      TextEditingController controller,
+      String label,
+      String hint, {
+        String? Function(String?)? validator,
+        TextInputType? keyboardType,
+        bool obscureText = false,
+        Widget? suffixIcon,
+      }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: TextFormField(

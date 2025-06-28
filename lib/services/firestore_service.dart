@@ -208,4 +208,52 @@ class FirestoreService {
     print("Document exists? ${snapshot.exists}");
     return snapshot.exists;
   }
+  Future<bool> checkAndLinkEmergencyContact(
+      User user, String userId, String phone) async {
+    final normalizedPhone = PhoneValidator.normalizePhone(phone);
+    try {
+      final contactDoc = await FirebaseFirestore.instance
+          .collection('emergencyContacts')
+          .doc(normalizedPhone)
+          .get();
+
+      if (contactDoc.exists) {
+        String patientId = contactDoc['linkedPatientId'];
+
+        await FirebaseFirestore.instance.collection('users').doc(userId).set({
+          'linkedPatientId': patientId,
+          'isEmergency': true,
+        }, SetOptions(merge: true));
+
+        await _linkEmergencyToPatientData(patientId, userId);
+        return true;
+      }
+    } catch (e) {
+      print("Link error: $e");
+    }
+
+    // Default fallback
+    await FirebaseFirestore.instance.collection('users').doc(userId).set({
+      'isEmergency': false,
+    }, SetOptions(merge: true));
+
+    return false;
+  }
+  Future<void> _linkEmergencyToPatientData(
+      String patientId, String emergencyContactId) async {
+    final collections = ['meds', 'appointments', 'doctors'];
+
+    for (String collection in collections) {
+      final snapshot = await FirebaseFirestore.instance
+          .collection(collection)
+          .where('linkedUserIds', arrayContains: patientId)
+          .get();
+
+      for (var doc in snapshot.docs) {
+        await doc.reference.update({
+          'linkedUserIds': FieldValue.arrayUnion([emergencyContactId]),
+        });
+      }
+    }
+  }
 }
