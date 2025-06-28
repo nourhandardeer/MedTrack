@@ -93,26 +93,44 @@ class _VerifyEmailPageState extends State<VerifyEmailPage> {
     super.dispose();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text(AppLocalizations.of(context)!.verifyYourEmail)),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text('${AppLocalizations.of(context)!.verificationEmailSentTo} ${widget.email}'),
-
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: canResend ? _resendVerificationEmail : null,
-              child:  Text(AppLocalizations.of(context)!.resendEmail),
+ @override
+Widget build(BuildContext context) {
+  return Scaffold(
+    appBar: AppBar(title: Text(AppLocalizations.of(context)!.verifyYourEmail)),
+    body: LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      '${AppLocalizations.of(context)!.verificationEmailSentTo} ${widget.email}',
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 20),
+                    ElevatedButton(
+                      onPressed: canResend ? _resendVerificationEmail : null,
+                      child: Text(AppLocalizations.of(context)!.resendEmail),
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      AppLocalizations.of(context)!.waitingForVerification,
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
             ),
-            const SizedBox(height: 10),
-            Text(AppLocalizations.of(context)!.waitingForVerification),
-          ],
-        ),
-      ),
-    );
-  }
+          ),
+        );
+      },
+    ),
+  );
+}
+
 }

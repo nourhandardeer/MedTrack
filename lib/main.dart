@@ -47,15 +47,16 @@ void main() async {
   await databaseHelper.debugDatabase();
   CloudinaryContext.cloudinary =
       Cloudinary.fromCloudName(cloudName: 'defwfev8k');
-  runApp(
-    ChangeNotifierProvider(
-      create: (context) => ThemeProvider(),
-      child: DevicePreview(
-        enabled: !kReleaseMode, // Disable in production
-        builder: (context) => const MyApp(),
-      ),
-    ),
-  );
+ runApp(
+  ChangeNotifierProvider(
+    create: (context) => ThemeProvider(),
+    child:
+        /* DevicePreview(
+      enabled: !kReleaseMode,
+      builder: (context) => */ const MyApp(), // ),
+  ),
+);
+
 }
 
 class MyApp extends StatefulWidget {

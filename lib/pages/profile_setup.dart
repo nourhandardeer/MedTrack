@@ -261,17 +261,20 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
                 },
               ),
             ),
-            ElevatedButton(
-              onPressed: _addEmergencyContact,
-              child: Text(AppLocalizations.of(context)!.addEmergencyContact),
-            ),
-            SizedBox(height: 20),
-            Center(
-              child: ElevatedButton(
-                onPressed: _saveProfile,
-                child: Text(AppLocalizations.of(context)!.saveProfile),
-              ),
-            ),
+         Center(
+  child: ElevatedButton(
+    onPressed: _addEmergencyContact,
+    child: Text(AppLocalizations.of(context)!.addEmergencyContact),
+  ),
+),
+SizedBox(height: 20),
+Center(
+  child: ElevatedButton(
+    onPressed: _saveProfile,
+    child: Text(AppLocalizations.of(context)!.saveProfile),
+  ),
+),
+
           ],
         ),
       ),
