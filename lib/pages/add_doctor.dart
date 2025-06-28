@@ -167,11 +167,13 @@ class _AddDoctorState extends State<AddDoctor> {
                           label: AppLocalizations.of(context)!.doctorName,
                           style: TextStyle(color: Colors.black)),
                       SizedBox(height: 16),
-                      buildTextField(
-                          controller: phoneController,
-                          label: AppLocalizations.of(context)!.phone,
+                       _buildTextFormField(
+                  phoneController,
+                           AppLocalizations.of(context)!.phone,
+                           'Enter doctor\'s phone number',
+                          validator: PhoneValidator.validatePhoneNumber,
                           keyboardType: TextInputType.phone,
-                          style: TextStyle(color: Colors.black)),
+                      ),
                       SizedBox(height: 16),
                       buildTextField(
                           controller: specialtyController,

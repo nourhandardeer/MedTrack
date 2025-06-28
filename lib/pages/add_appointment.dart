@@ -198,7 +198,7 @@ class _AddAppointmentState extends State<AddAppointment> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Doctor Name',
+                 Text( AppLocalizations.of(context)!.doctorName,
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
                 Autocomplete<String>(
@@ -231,28 +231,28 @@ class _AddAppointmentState extends State<AddAppointment> {
                 ),
                 const SizedBox(height: 16),
                 _buildTextField(
-                  label: 'Doctor Phone',
+                  label: AppLocalizations.of(context)!.phone,
                   controller: doctorPhoneController,
                   validator: (value) => PhoneValidator.validatePhoneNumber(value),
                 ),
                 _buildTextField(
-                  label: 'Specialty',
+                  label: AppLocalizations.of(context)!.specialty,
                   controller: specialtyController,
                   validator: (value) =>
                   value == null || value.trim().isEmpty ? 'Specialty is required' : null,
                 ),
                 _buildTextField(
-                  label: 'Location',
+                  label: AppLocalizations.of(context)!.location,
                   controller: locationController,
                   validator: (value) =>
                   value == null || value.trim().isEmpty ? 'Location is required' : null,
                 ),
                 _buildTextField(
-                  label: 'Notes (Optional)',
+                  label: AppLocalizations.of(context)!.notes, 
                   controller: notesController,
                   validator: (value) => null,
                 ),
-                const Text('Date', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                 Text(AppLocalizations.of(context)!.date, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
                 GestureDetector(
                   onTap: () => _selectDate(context),
@@ -265,13 +265,13 @@ class _AddAppointmentState extends State<AddAppointment> {
                     child: Text(
                       selectedDate != null
                           ? DateFormat('EEE, dd MMM yyyy').format(selectedDate!)
-                          : 'Select a date',
+                          :  AppLocalizations.of(context)!.selectDate,
                       style: const TextStyle(fontSize: 16),
                     ),
                   ),
                 ),
                 const SizedBox(height: 16),
-                const Text('Time', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                 Text(AppLocalizations.of(context)!.time, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
                 GestureDetector(
                   onTap: () => _selectTime(context),
@@ -284,7 +284,7 @@ class _AddAppointmentState extends State<AddAppointment> {
                     child: Text(
                       selectedTime != null
                           ? selectedTime!.format(context)
-                          : 'Select a time',
+                          : AppLocalizations.of(context)!.time,
                       style: const TextStyle(fontSize: 16),
                     ),
                   ),
@@ -298,7 +298,7 @@ class _AddAppointmentState extends State<AddAppointment> {
                   ),
                   child: _isLoading
                       ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text('Save Appointment', style: TextStyle(color: Colors.white)),
+                      :  Text(AppLocalizations.of(context)!.save, style: TextStyle(color: Colors.white)),
                 ),
               ],
             ),
