@@ -6,6 +6,8 @@ import 'package:medtrack/home.dart';
 import 'package:medtrack/pages/loggin.dart';
 import 'package:medtrack/pages/profile_setup.dart';
 import 'package:medtrack/services/verifyEmail.dart';
+import '../services/PhoneValidator.dart';
+
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
@@ -62,8 +64,24 @@ class _SignUpScreenState extends State<SignUpScreen> {
       String lastName = lastNameController.text.trim();
       String email = emailController.text.trim();
       String password = passwordController.text.trim();
-      String phone = phoneController.text.trim();
+      String rawPhone = phoneController.text.trim();
 
+
+      final validationError = PhoneValidator.validatePhoneNumber(rawPhone);
+      if (validationError != null) {
+        errorMessage = validationError;
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(errorMessage!)));
+        setState(() => _isLoading = false);
+        return;
+      }
+
+      final cleaned = PhoneValidator.normalizePhone(rawPhone);
+
+      final isEgyptian = RegExp(r'^01[0-9]{9}$').hasMatch(cleaned);
+
+      final phone = isEgyptian ? cleaned : rawPhone.replaceAll(' ', '');
+
+      // Create the user
       String? errorMsg = await Auth().createUserWithEmailAndPassword(
         firstName: firstName,
         lastName: lastName,
@@ -74,35 +92,47 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
       if (errorMsg == null) {
         User? user = FirebaseAuth.instance.currentUser;
-        if (user != null && !user.emailVerified) {
-  await user.sendEmailVerification();
-  Navigator.pushReplacement(
-    context,
-    MaterialPageRoute(
-      builder: (context) => VerifyEmailPage(
-        user: user,
-        firstName: firstName,
-        lastName: lastName,
-        phone: phone,
-        email: email,
-      ),
-    ),
-  );
-} else {
-  await checkAndLinkEmergencyContact(user!, user.uid, phone);
-  _onSignupSuccess(user.uid, firstName, lastName, phone, email, isEmergency);
-}
 
+        if (user != null) {
+          await checkAndLinkEmergencyContact(user, user.uid, phone);
+
+          if (!user.emailVerified) {
+            await user.sendEmailVerification();
+
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => VerifyEmailPage(
+                  user: user,
+                  firstName: firstName,
+                  lastName: lastName,
+                  phone: phone,
+                  email: email,
+                ),
+              ),
+            );
+          } else {
+            // Already verified (in rare case), continue
+            _onSignupSuccess(user.uid, firstName, lastName, phone, email, false);
+          }
+        }
       } else {
-        setState(() {
-          errorMessage = errorMsg;
-        });
+        errorMessage = errorMsg;
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(errorMessage!)));
       }
+
+    } on FirebaseAuthException catch (e) {
+      print("Registration error: ${e.code} - ${e.message}");
+      setState(() {
+        errorMessage = e.message ?? "An unexpected error occurred.";
+      });
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(errorMessage!)));
     } catch (e) {
-      print("Registration error: $e"); // Add this
+      print("Unexpected registration error: $e");
       setState(() {
         errorMessage = "An unexpected error occurred.";
       });
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(errorMessage!)));
     } finally {
       setState(() {
         _isLoading = false;
@@ -112,22 +142,26 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   void _onSignupSuccess(String userId, String firstName, String lastName,
       String phone, String email, bool isEmergency) async {
+    final normalizedPhone = PhoneValidator.normalizePhone(phone);
+
     try {
       // Check if user is an emergency contact
       DocumentSnapshot contactDoc = await FirebaseFirestore.instance
           .collection('emergencyContacts')
-          .doc(phone)
+          .doc(normalizedPhone)
           .get();
 
       if (contactDoc.exists) {
         isEmergency = true;
+
+        // Update user profile and preserve existing fields
         await FirebaseFirestore.instance.collection('users').doc(userId).set({
           'firstName': firstName,
           'lastName': lastName,
-          'phone': phone,
+          'phone': normalizedPhone,
           'email': email,
-          'isEmergency': isEmergency,
-        });
+          'isEmergency': true,
+        }, SetOptions(merge: true));
 
         // Navigate to Home Screen directly for emergency contact
         Navigator.pushReplacement(
@@ -143,13 +177,14 @@ class _SignUpScreenState extends State<SignUpScreen> {
               userId: userId,
               firstName: firstName,
               lastName: lastName,
-              phone: phone,
+              phone: normalizedPhone,
             ),
           ),
         );
       }
     } catch (e) {
       print("Error during post-signup navigation: $e");
+
       // Fallback navigation
       Navigator.pushReplacement(
         context,
@@ -158,51 +193,20 @@ class _SignUpScreenState extends State<SignUpScreen> {
             userId: userId,
             firstName: firstName,
             lastName: lastName,
-            phone: phone,
+            phone: normalizedPhone,
           ),
         ),
       );
     }
   }
 
-  // void _onSignupSuccess(
-  //     String userId, String firstName, String lastName, String phone) {
-  //   Navigator.pushReplacement(
-  //     context,
-  //     MaterialPageRoute(
-  //       builder: (context) => ProfileSetupPage(
-  //         userId: userId,
-  //         firstName: firstName,
-  //         lastName: lastName,
-  //         phone: phone,
-  //       ),
-  //     ),
-  //   );
-  // }
-
-  // Future<void> checkAndLinkEmergencyContact(User user) async {
-  //   try {
-  //     DocumentSnapshot contactDoc = await FirebaseFirestore.instance
-  //         .collection('emergencyContacts')
-  //         .doc(user.phoneNumber)
-  //         .get();
-  //
-  //     if (contactDoc.exists) {
-  //       String patientId = contactDoc['linkedPatientId'];
-  //       await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
-  //         'linkedPatientId': patientId,
-  //       }, SetOptions(merge: true));
-  //     }
-  //   } catch (e) {
-  //     print("Error checking emergency contact linkage: \$e");
-  //   }
-  // }
   Future<void> checkAndLinkEmergencyContact(
       User user, String userId, String phone) async {
+    final normalizedPhone = PhoneValidator.normalizePhone(phone);
     try {
       final contactDoc = await FirebaseFirestore.instance
           .collection('emergencyContacts')
-          .doc(phone)
+          .doc(normalizedPhone)
           .get();
 
       if (contactDoc.exists) {
@@ -211,7 +215,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
         // Save info in emergency contact's user doc
         await FirebaseFirestore.instance.collection('users').doc(userId).set({
           'linkedPatientId': patientId,
-          'isEmergencyContact': true,
+          'isEmergency': true,
         }, SetOptions(merge: true));
 
         // Now update all meds, appointments, and doctors linked to this patient
@@ -309,8 +313,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     phoneController,
                     AppLocalizations.of(context)!.phone,
                     'Enter your phone number',
-                    validator: (value) =>
-                        value?.isEmpty ?? true ? 'Required' : null,
+                    validator: PhoneValidator.validatePhoneNumber,
                     keyboardType: TextInputType.phone,
                   ),
                   if (errorMessage != null && errorMessage!.isNotEmpty)

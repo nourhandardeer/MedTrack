@@ -252,7 +252,6 @@ class _SettingsPageState extends State<SettingsPage> {
       ),
     );
   }
-
   Future<void> deleteAccountAndData(String password) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
@@ -260,84 +259,85 @@ class _SettingsPageState extends State<SettingsPage> {
     final userId = user.uid;
 
     try {
+      // --- Re-authenticate
       final credential = EmailAuthProvider.credential(
         email: user.email!,
         password: password,
       );
       await user.reauthenticateWithCredential(credential);
 
-      final userDocRef =
-          FirebaseFirestore.instance.collection('users').doc(userId);
+      final userDocRef = FirebaseFirestore.instance.collection('users').doc(userId);
       final userDoc = await userDocRef.get();
       final userData = userDoc.data();
+
+      final isEmergency = userData?['isEmergency'] == true;
       final phone = userData?['phone'];
 
-      if (phone != null && phone.toString().isNotEmpty) {
-        final contactsQuery = await userDocRef
-            .collection('emergencyContacts')
-            .where('phone', isEqualTo: phone)
-            .get();
+      if (isEmergency) {
+        if (phone != null && phone.toString().isNotEmpty) {
+          final phoneStr = phone.toString();
 
-        for (final doc in contactsQuery.docs) {
-          await doc.reference.delete();
-        }
-      }
+          // --- Delete from emergency_contacts/{phone}
+          final emergencyTopDocRef = FirebaseFirestore.instance
+              .collection('emergencyContacts')
+              .doc(phoneStr);
 
-      final medsTakenDocs = await userDocRef.collection('medsTaken').get();
-      for (final doc in medsTakenDocs.docs) {
-        final data = doc.data();
-        final List<dynamic>? linkedUserIds = data['linkedUserIds'];
-
-        if (linkedUserIds != null && linkedUserIds.contains(userId)) {
-          await doc.reference.update({
-            'linkedUserIds': FieldValue.arrayRemove([userId]),
-          });
-
-          final updatedDoc = await doc.reference.get();
-          final updatedLinkedUserIds = updatedDoc.data()?['linkedUserIds'];
-          if (updatedLinkedUserIds == null || updatedLinkedUserIds.isEmpty) {
-            await doc.reference.delete();
+          final emergencyTopDoc = await emergencyTopDocRef.get();
+          if (emergencyTopDoc.exists) {
+            await emergencyTopDocRef.delete();
           }
-        } else {
-          await doc.reference.delete();
-        }
-      }
 
-      await userDocRef.delete();
+          // --- Also delete from all users' subcollection emergencyContacts/{phone}
+          final allUsers = await FirebaseFirestore.instance.collection('users').get();
+          for (final patient in allUsers.docs) {
+            final subContactRef = FirebaseFirestore.instance
+                .collection('users')
+                .doc(patient.id)
+                .collection('emergencyContacts')
+                .doc(phoneStr);
 
-      if (phone != null && phone.toString().isNotEmpty) {
-        final emergencyRef = FirebaseFirestore.instance
-            .collection('emergencyContacts')
-            .doc(phone.toString());
-        final emergencyDoc = await emergencyRef.get();
-        if (emergencyDoc.exists) {
-          await emergencyRef.delete();
-        }
-      }
-
-      final topLevelCollections = ['meds', 'doctors', 'appointments'];
-      for (final collectionName in topLevelCollections) {
-        final querySnapshot =
-            await FirebaseFirestore.instance.collection(collectionName).get();
-        for (final doc in querySnapshot.docs) {
-          final data = doc.data();
-          final List<dynamic>? linkedUserIds = data['linkedUserIds'];
-
-          if (linkedUserIds != null && linkedUserIds.contains(userId)) {
-            await doc.reference.update({
-              'linkedUserIds': FieldValue.arrayRemove([userId]),
-            });
-
-            final updatedDoc = await doc.reference.get();
-            final updatedLinkedUserIds = updatedDoc.data()?['linkedUserIds'];
-            if (updatedLinkedUserIds == null || updatedLinkedUserIds.isEmpty) {
-              await doc.reference.delete();
+            final subContactDoc = await subContactRef.get();
+            if (subContactDoc.exists) {
+              await subContactRef.delete();
             }
           }
         }
+
+        // Delete user document
+        await userDocRef.delete();
+
+        // Delete Firebase Auth account
+        await user.delete();
+
+        return;
       }
 
+      // --- If not emergency, delete subcollections
+      final subcollections = ['medsTaken', 'emergencyContacts'];
+      for (final sub in subcollections) {
+        final subDocs = await userDocRef.collection(sub).get();
+        for (final doc in subDocs.docs) {
+          await doc.reference.delete();
+        }
+      }
+
+      // --- Delete from top-level meds, doctors, appointments
+      final topCollections = ['meds', 'doctors', 'appointments'];
+      for (final col in topCollections) {
+        final querySnapshot = await FirebaseFirestore.instance
+            .collection(col)
+            .where('linkedUserIds', arrayContains: userId)
+            .get();
+
+        for (final doc in querySnapshot.docs) {
+          await doc.reference.delete();
+        }
+      }
+
+      // Delete user doc and account
+      await userDocRef.delete();
       await user.delete();
+
     } on FirebaseAuthException catch (e) {
       if (e.code == 'requires-recent-login') {
         throw Exception('Please log in again to delete your account.');

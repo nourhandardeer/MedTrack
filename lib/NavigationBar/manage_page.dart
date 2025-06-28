@@ -10,6 +10,7 @@ import '../services/firestore_service.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
+
 class ManagePage extends StatefulWidget {
   ManagePage({super.key});
   @override
@@ -30,8 +31,6 @@ class _ManagePageState extends State<ManagePage> {
 
   void _loadData() async {
     final linkedUserIds = await _firestoreService.getLinkedUserIds();
-    print("Linked user IDs: $linkedUserIds");
-
     final appointments = await _firestoreService.getAppointments(linkedUserIds);
     final doctors = await _firestoreService.getDoctors(linkedUserIds);
 
@@ -40,16 +39,6 @@ class _ManagePageState extends State<ManagePage> {
       _appointmentsFuture = Future.value(appointments);
       _doctorsFuture = Future.value(doctors);
     });
-  }
-
-  Future<List<QueryDocumentSnapshot>> _getAppointments() async {
-    final linkedUserIds = await _linkedUsersFuture!;
-    return _firestoreService.getAppointments(linkedUserIds);
-  }
-
-  Future<List<QueryDocumentSnapshot>> _getDoctors() async {
-    final linkedUserIds = await _linkedUsersFuture!;
-    return _firestoreService.getDoctors(linkedUserIds);
   }
 
   @override
@@ -68,12 +57,9 @@ class _ManagePageState extends State<ManagePage> {
 
         if (linkedUsersSnapshot.hasError || !linkedUsersSnapshot.hasData) {
           return const Center(
-            child: Text("Error loading user data.",
-                style: TextStyle(color: Colors.red)),
+            child: Text("Error loading user data.", style: TextStyle(color: Colors.red)),
           );
         }
-
-        final linkedUserIds = linkedUsersSnapshot.data!;
 
         return DefaultTabController(
           length: 2,
@@ -122,8 +108,7 @@ class _ManagePageState extends State<ManagePage> {
         return ListView.separated(
           padding: const EdgeInsets.all(16),
           itemCount: appointments.length,
-          separatorBuilder: (_, __) =>
-              const Divider(thickness: 1, color: Colors.grey),
+          separatorBuilder: (_, __) => const Divider(thickness: 1, color: Colors.grey),
           itemBuilder: (context, index) {
             var appointment = appointments[index];
             return _buildAppointmentCard(appointment, appointment.id, context);
@@ -148,17 +133,13 @@ class _ManagePageState extends State<ManagePage> {
         return ListView.separated(
           padding: const EdgeInsets.all(16),
           itemCount: doctors.length,
-          separatorBuilder: (_, __) =>
-              const Divider(thickness: 1, color: Colors.grey),
+          separatorBuilder: (_, __) => const Divider(thickness: 1, color: Colors.grey),
           itemBuilder: (context, index) {
             final doctor = doctors[index];
             return Container(
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
-                  colors: [
-                    Color.fromARGB(255, 220, 232, 242),
-                    Color(0xFFFFFFFF)
-                  ],
+                  colors: [Color.fromARGB(255, 220, 232, 242), Color(0xFFFFFFFF)],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -182,8 +163,7 @@ class _ManagePageState extends State<ManagePage> {
                   ),
                   title: Text(
                     "Dr. ${doctor['doctorName']}",
-                    style: const TextStyle(
-                        fontSize: 15, fontWeight: FontWeight.bold),
+                    style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
                   ),
                   subtitle: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -204,7 +184,7 @@ class _ManagePageState extends State<ManagePage> {
                           initialData: doctor.data() as Map<String, dynamic>,
                         ),
                       ),
-                    );
+                    ).then((_) => _loadData()); // <-- refresh after edit
                   },
                 ),
               ),
@@ -221,25 +201,55 @@ class _ManagePageState extends State<ManagePage> {
       final doc = await firestore.collection('doctors').doc(doctorId).get();
 
       if (!doc.exists) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text('Doctor not found')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Doctor not found')),
+        );
         return;
       }
 
       await firestore.collection('doctors').doc(doctorId).delete();
+      _loadData(); // <-- refresh after delete
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-            content: Text('Doctor deleted successfully!'),
-            backgroundColor: Colors.red),
+          content: Text('Doctor deleted successfully!'),
+          backgroundColor: Colors.red,
+        ),
       );
     } catch (e) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: ${e.toString()}')),
+      );
     }
   }
 
-  Widget _buildAppointmentCard(
-      QueryDocumentSnapshot appointment, String id, BuildContext context) {
+  Future<void> deleteAppointment(String appointmentId, BuildContext context) async {
+    try {
+      final firestore = FirebaseFirestore.instance;
+      final doc = await firestore.collection('appointments').doc(appointmentId).get();
+
+      if (!doc.exists) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Appointment not found')),
+        );
+        return;
+      }
+
+      await firestore.collection('appointments').doc(appointmentId).delete();
+      _loadData(); // <-- refresh after delete
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Appointment deleted successfully!'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: ${e.toString()}')),
+      );
+    }
+  }
+
+  Widget _buildAppointmentCard(QueryDocumentSnapshot appointment, String id, BuildContext context) {
     return Container(
       decoration: BoxDecoration(
         gradient: const LinearGradient(
@@ -250,9 +260,10 @@ class _ManagePageState extends State<ManagePage> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-              color: Colors.grey.shade100,
-              blurRadius: 10,
-              offset: const Offset(0, 4)),
+            color: Colors.grey.shade100,
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
         ],
       ),
       child: Card(
@@ -262,12 +273,11 @@ class _ManagePageState extends State<ManagePage> {
         child: ListTile(
           leading: const Icon(Icons.event, color: Colors.blue),
           trailing: IconButton(
-            onPressed: () => deleteAppointment(id, context),
             icon: const Icon(Icons.delete, color: Colors.red),
+            onPressed: () => deleteAppointment(id, context),
           ),
           title: Text("Dr. ${appointment['doctorName']}",
-              style:
-                  const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
           subtitle: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -288,36 +298,11 @@ class _ManagePageState extends State<ManagePage> {
                   initialData: appointment.data() as Map<String, dynamic>,
                 ),
               ),
-            );
+            ).then((_) => _loadData()); // <-- refresh after edit
           },
         ),
       ),
     );
-  }
-
-  Future<void> deleteAppointment(
-      String appointmentId, BuildContext context) async {
-    try {
-      final firestore = FirebaseFirestore.instance;
-      final doc =
-          await firestore.collection('appointments').doc(appointmentId).get();
-
-      if (!doc.exists) {
-        ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Appointment not found')));
-        return;
-      }
-
-      await firestore.collection('appointments').doc(appointmentId).delete();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('Appointment deleted successfully!'),
-            backgroundColor: Colors.red),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
-    }
   }
 
   Widget _buildEmptyState(BuildContext context) {
@@ -338,12 +323,10 @@ class _ManagePageState extends State<ManagePage> {
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.blue,
               minimumSize: const Size(200, 50),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             ),
             onPressed: () => _showBottomSheet(context),
-            child: const Text('Get Started',
-                style: TextStyle(fontSize: 18, color: Colors.white)),
+            child: const Text('Get Started', style: TextStyle(fontSize: 18, color: Colors.white)),
           ),
         ],
       ),
@@ -354,7 +337,8 @@ class _ManagePageState extends State<ManagePage> {
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
       builder: (context) => Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -368,9 +352,9 @@ class _ManagePageState extends State<ManagePage> {
               onTap: () {
                 Navigator.pop(context);
                 Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) => const AddAppointment()));
+                  context,
+                  MaterialPageRoute(builder: (_) => const AddAppointment()),
+                ).then((_) => _loadData());
               },
             ),
             ListTile(
@@ -378,8 +362,10 @@ class _ManagePageState extends State<ManagePage> {
               title: Text(AppLocalizations.of(context)!.addDoctor),
               onTap: () {
                 Navigator.pop(context);
-                Navigator.push(context,
-                    MaterialPageRoute(builder: (context) => AddDoctor()));
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => AddDoctor()),
+                ).then((_) => _loadData());
               },
             ),
             const SizedBox(height: 16),

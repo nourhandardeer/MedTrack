@@ -7,11 +7,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
-// صفحة تفاصيل إعادة التعبئة (تفاصيل الدواء)
+
 class RefillDetailsPage extends StatefulWidget {
-  final Map<String, dynamic> medData; // بيانات الدواء
+  final Map<String, dynamic> medData;
   final String userId; // UID of the original user (patient)
-  final bool isEmergencyContact; // ← NEW: role flag
+  final bool isEmergencyContact; 
 
   const RefillDetailsPage({
     Key? key,
@@ -57,59 +57,59 @@ class _RefillDetailsPageState extends State<RefillDetailsPage> {
     }
   }
 
-  // 📍 Load user location from Firestore
+  //  Load user location from Firestore
   Future<void> _loadUserSavedLocation() async {
-  final user = FirebaseAuth.instance.currentUser;
-  if (user == null) return;
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
 
-  try {
-    // Get current user's phone number from 'users' collection
-    final userDoc = await FirebaseFirestore.instance
-        .collection('users')
-        .doc(user.uid)
-        .get();
+    try {
+      // Get current user's phone number from 'users' collection
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
 
-    if (!userDoc.exists || userDoc.data() == null) {
-      _showError("User document not found.");
-      return;
+      if (!userDoc.exists || userDoc.data() == null) {
+        _showError("User document not found.");
+        return;
+      }
+
+      final currentUserPhone = userDoc['phone'];
+      print("User phone: $currentUserPhone");
+
+      // Use phone number to get emergency contact location
+      final contactDoc = await FirebaseFirestore.instance
+          .collection('emergencyContacts')
+          .doc(currentUserPhone)
+          .get();
+
+      if (!contactDoc.exists || contactDoc.data() == null) {
+        _showError("Emergency contact not found.");
+        return;
+      }
+
+      double lat = double.tryParse(contactDoc['latitude'].toString()) ?? 0.0;
+      double lng = double.tryParse(contactDoc['longitude'].toString()) ?? 0.0;
+
+      if (lat == 0.0 && lng == 0.0) {
+        _showError("Invalid coordinates.");
+        return;
+      }
+
+      setState(() {
+        patientLocation = LatLng(lat, lng);
+      });
+
+      print("Loaded location: $lat, $lng");
+
+    } catch (e) {
+      _showError("Error loading location: $e");
     }
-
-    final currentUserPhone = userDoc['phone']; 
-    print("User phone: $currentUserPhone");
-
-    // Use phone number to get emergency contact location
-    final contactDoc = await FirebaseFirestore.instance
-        .collection('emergencyContacts')
-        .doc(currentUserPhone)
-        .get();
-
-    if (!contactDoc.exists || contactDoc.data() == null) {
-      _showError("Emergency contact not found.");
-      return;
-    }
-
-    double lat = double.tryParse(contactDoc['latitude'].toString()) ?? 0.0;
-    double lng = double.tryParse(contactDoc['longitude'].toString()) ?? 0.0;
-
-    if (lat == 0.0 && lng == 0.0) {
-      _showError("Invalid coordinates.");
-      return;
-    }
-
-    setState(() {
-      patientLocation = LatLng(lat, lng);
-    });
-
-    print("Loaded location: $lat, $lng");
-
-  } catch (e) {
-    _showError("Error loading location: $e");
   }
-}
 
 
 
-  // 📍 Get current device location
+  // Get current device location
   Future<void> _getCurrentDeviceLocation() async {
     try {
       Position position = await Geolocator.getCurrentPosition(
@@ -129,11 +129,11 @@ class _RefillDetailsPageState extends State<RefillDetailsPage> {
     }
   }
 
-  // 🔎 Open Google Maps near user (saved) location
+  // Open Google Maps near user (saved) location
   Future<void> _openUserLocationInMaps() async {
     String url = "https://www.google.com/maps/search/pharmacy/@${patientLocation.latitude},${patientLocation.longitude},17z";
 
-  Uri uri = Uri.parse(url);
+    Uri uri = Uri.parse(url);
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     } else {

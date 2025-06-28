@@ -282,8 +282,19 @@ class _MedicationDetailsPageState extends State<MedicationDetailsPage> {
 
     String frequency = medData!['frequency'] ?? '';
     bool isTwiceADay = frequency == "Twice a day";
-    int currentInventory =
+    //int currentInventory =
         int.tryParse(medData!['currentInventory'].toString()) ?? 0;
+    int currentInventory = 0;
+    final inventoryValue = medData?['currentInventory'];
+
+    if (inventoryValue is int) {
+      currentInventory = inventoryValue;
+    } else if (inventoryValue is double) {
+      currentInventory = inventoryValue.round(); // or .toInt()
+    } else if (inventoryValue is String) {
+      currentInventory = int.tryParse(inventoryValue) ?? 0;
+    }
+
     String intakeAdvice = medData!['intakeAdvice'] ?? 'None';
     TextEditingController intakeController = TextEditingController(
       text: medData!['customIntakeAdvice'] ?? '',

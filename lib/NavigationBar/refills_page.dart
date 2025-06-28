@@ -61,7 +61,7 @@ class _RefillsPageState extends State<RefillsPage> {
           padding: const EdgeInsets.all(16),
           itemCount: documents.length,
           separatorBuilder: (_, __) =>
-              const Divider(thickness: 1, color: Colors.grey),
+          const Divider(thickness: 1, color: Colors.grey),
           itemBuilder: (context, index) {
             final data = documents[index].data() as Map<String, dynamic>;
             final medName = data["name"]?.toString() ?? "Unknown Medication";
@@ -88,9 +88,9 @@ class _RefillsPageState extends State<RefillsPage> {
 
             final List<dynamic>? reminderTimes = data["reminderTimes"];
             final String reminderTimeStr =
-                (reminderTimes != null && reminderTimes.isNotEmpty)
-                    ? (reminderTimes[0] as String)
-                    : "Not set";
+            (reminderTimes != null && reminderTimes.isNotEmpty)
+                ? (reminderTimes[0] as String)
+                : "Not set";
 
             // Notifications (مش مغيره هنا)
             if (inventory > 0 &&
@@ -100,7 +100,7 @@ class _RefillsPageState extends State<RefillsPage> {
 
               final DateTime now = DateTime.now();
               final DateTime notificationTime =
-                  now.add(const Duration(seconds: 5));
+              now.add(const Duration(seconds: 5));
 
               NotificationService.scheduleNotification(
                 id: medName.hashCode ^ notificationTime.hashCode,
@@ -108,9 +108,9 @@ class _RefillsPageState extends State<RefillsPage> {
                 bodyEn: "Your medication inventory is low! Please refill soon.",
                 bodyAr: "مخزون دوائك منخفض! يرجى إعادة التعبئة قريبًا.",
                 ttsMessageEn:
-                    "Your medication $medName inventory is low! Please refill soon.",
+                "Your medication $medName inventory is low! Please refill soon.",
                 ttsMessageAr:
-                    "مخزون دوائك $medName منخفض! يرجى إعادة التعبئة قريبًا.",
+                "مخزون دوائك $medName منخفض! يرجى إعادة التعبئة قريبًا.",
                 scheduledTime: notificationTime,
                 speakImmediately: true,
               );
@@ -142,7 +142,7 @@ class _RefillsPageState extends State<RefillsPage> {
                     borderRadius: BorderRadius.circular(12)),
                 child: ListTile(
                   leading:
-                      Image.asset("images/drugs.png", width: 32, height: 32),
+                  Image.asset("images/drugs.png", width: 32, height: 32),
                   title: Text(
                     medName,
                     style: const TextStyle(
@@ -171,7 +171,7 @@ class _RefillsPageState extends State<RefillsPage> {
                   onTap: () {
                     // نسخ البيانات واضافة الموقع من UserLocationHolder
                     Map<String, dynamic> medDataWithLocation =
-                        Map<String, dynamic>.from(data);
+                    Map<String, dynamic>.from(data);
                     medDataWithLocation['latitude'] =
                         UserLocationHolder.latitude ?? 0;
                     medDataWithLocation['longitude'] =
@@ -182,8 +182,8 @@ class _RefillsPageState extends State<RefillsPage> {
                       MaterialPageRoute(
                         builder: (context) =>
                             RefillDetailsPage(medData: medDataWithLocation
-                                 , userId: userId
-                                       ,isEmergencyContact: false, // ← Because this is for the normal user
+                              , userId: userId
+                              ,isEmergencyContact: false, // ← Because this is for the normal user
 
 
                             ),

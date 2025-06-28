@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../services/PhoneValidator.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
@@ -65,6 +66,7 @@ class _EditAppointmentPageState extends State<EditAppointmentPage> {
     required TextEditingController controller,
     bool requiredField = true,
     TextInputType? keyboardType,
+    String? Function(String?)? validator,
   }) {
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 8),
@@ -77,9 +79,10 @@ class _EditAppointmentPageState extends State<EditAppointmentPage> {
             labelText: label,
             border: InputBorder.none,
           ),
-          validator: requiredField
-              ? (value) => value == null || value.trim().isEmpty ? 'Required' : null
-              : null,
+          validator: validator ??
+              (requiredField
+                  ? (value) => value == null || value.trim().isEmpty ? 'Required' : null
+                  : null),
         ),
       ),
     );
@@ -106,7 +109,13 @@ class _EditAppointmentPageState extends State<EditAppointmentPage> {
           child: Column(
             children: [
               _buildCardField(icon: Icons.person, label: AppLocalizations.of(context)!.doctorName, controller: _doctorNameController),
-              _buildCardField(icon: Icons.phone, label: AppLocalizations.of(context)!.phone, controller: _phoneController, keyboardType: TextInputType.phone),
+              _buildCardField(
+                icon: Icons.phone,
+                label: AppLocalizations.of(context)!.phone,
+                controller: _phoneController,
+                keyboardType: TextInputType.phone,
+                validator: PhoneValidator.validatePhoneNumber,
+              ),
               _buildCardField(icon: Icons.medical_services, label: AppLocalizations.of(context)!.specialty, controller: _specialtyController),
               _buildCardField(icon: Icons.location_on, label: AppLocalizations.of(context)!.location, controller: _locationController),
               _buildCardField(icon: Icons.note, label: AppLocalizations.of(context)!.notes, controller: _notesController, requiredField: false),

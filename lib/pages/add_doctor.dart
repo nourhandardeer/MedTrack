@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/firestore_service.dart';
+import '../services/PhoneValidator.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
@@ -36,34 +37,37 @@ class _AddDoctorState extends State<AddDoctor> {
       );
       return;
     }
+
     setState(() {
       isLoading = true;
     });
-    String uid = user!.uid;
 
     try {
-      // Fetch the current user's document
+      String uid = user!.uid;
+
+      // Fetch current user's phone number
       DocumentSnapshot userDoc =
-          await FirebaseFirestore.instance.collection('users').doc(uid).get();
-      String? phoneNumber = userDoc['phone']; // Fetch user's phone number
+      await FirebaseFirestore.instance.collection('users').doc(uid).get();
+      String? phoneNumber = userDoc['phone'];
 
       if (phoneNumber == null) {
         print("DEBUG: No phone number found for the current user.");
         return;
       }
-      _firestoreService.saveData(
+
+      await _firestoreService.saveData(
         collection: 'doctors',
         context: context,
         data: {
-          'userId': FirebaseAuth.instance.currentUser?.uid,
+          'userId': uid,
           'doctorName': nameController.text,
           'doctorPhone': phoneController.text,
           'specialty': specialtyController.text,
           'location': locationController.text,
           'createdAt': FieldValue.serverTimestamp(),
-          //'linkedUserIds': linkedUsers,
         },
       );
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Doctor saved successfully'),
@@ -76,14 +80,41 @@ class _AddDoctorState extends State<AddDoctor> {
       print("Error saving doctor: $e");
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-            content: Text('Error saving doctor: $e'),
-            backgroundColor: Colors.red),
+          content: Text('Error saving doctor: $e'),
+          backgroundColor: Colors.red,
+        ),
       );
     } finally {
       setState(() {
         isLoading = false;
       });
     }
+  }
+
+  Widget _buildTextFormField(
+      TextEditingController controller,
+      String label,
+      String hintText, {
+        required String? Function(String?) validator,
+        TextInputType keyboardType = TextInputType.text,
+      }) {
+    return TextFormField(
+      controller: controller,
+      keyboardType: keyboardType,
+      validator: validator,
+      decoration: InputDecoration(
+        labelText: label,
+        hintText: hintText,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.blue, width: 2),
+        ),
+        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+      ),
+    );
   }
 
   Widget buildTextField({
