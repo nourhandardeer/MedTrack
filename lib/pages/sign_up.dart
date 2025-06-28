@@ -6,6 +6,8 @@ import 'package:medtrack/home.dart';
 import 'package:medtrack/pages/loggin.dart';
 import 'package:medtrack/pages/profile_setup.dart';
 import 'package:medtrack/services/verifyEmail.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({Key? key}) : super(key: key);
@@ -251,7 +253,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const SizedBox(height: 50),
-                  Text('Create an Account',
+                  Text(AppLocalizations.of(context)!.createAccount,
                       style: Theme.of(context)
                           .textTheme
                           .headlineSmall
@@ -264,28 +266,28 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   const SizedBox(height: 20),
                   _buildTextFormField(
                     firstNameController,
-                    'First Name',
+                    AppLocalizations.of(context)!.firstName,
                     'Enter your first name',
                     validator: (value) =>
                         value?.isEmpty ?? true ? 'Required' : null,
                   ),
                   _buildTextFormField(
                     lastNameController,
-                    'Last Name',
+                    AppLocalizations.of(context)!.lastName,
                     'Enter your last name',
                     validator: (value) =>
                         value?.isEmpty ?? true ? 'Required' : null,
                   ),
                   _buildTextFormField(
                     emailController,
-                    'Email',
+                    AppLocalizations.of(context)!.email,
                     'Enter your email',
                     validator: _validateEmail,
                     keyboardType: TextInputType.emailAddress,
                   ),
                   _buildTextFormField(
                     passwordController,
-                    'Password',
+                    AppLocalizations.of(context)!.password,
                     'Enter your password',
                     validator: _validatePassword,
                     obscureText: _obscurePassword,
@@ -305,7 +307,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   ),
                   _buildTextFormField(
                     phoneController,
-                    'Phone',
+                    AppLocalizations.of(context)!.phone,
                     'Enter your phone number',
                     validator: (value) =>
                         value?.isEmpty ?? true ? 'Required' : null,
@@ -340,8 +342,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                 color: Colors.white,
                               ),
                             )
-                          : const Text(
-                              "Sign Up",
+                          :  Text(
+                              AppLocalizations.of(context)!.signUp,
                               style:
                                   TextStyle(fontSize: 16, color: Colors.white),
                             ),
@@ -356,8 +358,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         MaterialPageRoute(builder: (context) => LoginScreen()),
                       );
                     },
-                    child: const Text(
-                      "Already have an account? Login",
+                    child:  Text(
+                      AppLocalizations.of(context)!.haveAccount,
                       style: TextStyle(
                           fontSize: 13,
                           color: Color.fromARGB(255, 13, 71, 161)),

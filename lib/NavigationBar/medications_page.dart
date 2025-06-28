@@ -6,6 +6,7 @@ import 'package:medtrack/AddMed/medication_details_page.dart';
 
 import '../services/firestore_service.dart';
 
+
 class MedicationsPage extends StatefulWidget {
   const MedicationsPage({super.key});
 

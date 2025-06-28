@@ -3,6 +3,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'FrequencySelectionPage.dart';
 import 'UnitSelectionPage.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class MedicationDetailsPage extends StatefulWidget {
   final String medId;
@@ -61,15 +63,15 @@ class _MedicationDetailsPageState extends State<MedicationDetailsPage> {
       });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text("$field updated successfully!"),
+          content: Text(AppLocalizations.of(context)!.updatedSuccess),
           backgroundColor: Colors.green,
         ),
       );
     } catch (e) {
       print("Error updating $field: $e");
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Failed to update."),
+        SnackBar(
+          content: Text(AppLocalizations.of(context)!.updatedFailed),
           backgroundColor: Colors.red,
         ),
       );
@@ -89,8 +91,8 @@ class _MedicationDetailsPageState extends State<MedicationDetailsPage> {
           medData?['reminderTimes'] = times;
         });
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Reminder time updated successfully!"),
+          SnackBar(
+            content: Text(AppLocalizations.of(context)!.reminderUpdatedSuccess),
             backgroundColor: Colors.green,
           ),
         );
@@ -98,8 +100,8 @@ class _MedicationDetailsPageState extends State<MedicationDetailsPage> {
     } catch (e) {
       print("Error updating reminder time: $e");
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Failed to update reminder time."),
+        SnackBar(
+          content: Text(AppLocalizations.of(context)!.reminderUpdatedFailed),
           backgroundColor: Colors.red,
         ),
       );
@@ -113,7 +115,8 @@ class _MedicationDetailsPageState extends State<MedicationDetailsPage> {
       initialTime: selectedTime,
     ).then((pickedTime) {
       if (pickedTime != null) {
-        final hour = pickedTime.hourOfPeriod == 0 ? 12 : pickedTime.hourOfPeriod;
+        final hour =
+            pickedTime.hourOfPeriod == 0 ? 12 : pickedTime.hourOfPeriod;
         final minute = pickedTime.minute.toString().padLeft(2, '0');
         final period = pickedTime.period == DayPeriod.am ? 'AM' : 'PM';
         final formattedTime = "$hour:$minute $period";
@@ -160,13 +163,12 @@ class _MedicationDetailsPageState extends State<MedicationDetailsPage> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text("Delete Medication"),
-          content:
-              const Text("Are you sure you want to delete this medication?"),
+          title: Text(AppLocalizations.of(context)!.deleteMedication),
+          content: Text(AppLocalizations.of(context)!.confirmDeleteMedication),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text("Cancel"),
+              child: Text(AppLocalizations.of(context)!.cancel),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
@@ -178,7 +180,7 @@ class _MedicationDetailsPageState extends State<MedicationDetailsPage> {
                 Navigator.of(context).pop();
                 Navigator.of(context).pop();
               },
-              child: const Text("Delete"),
+              child: Text(AppLocalizations.of(context)!.delete),
             ),
           ],
         );
@@ -248,13 +250,21 @@ class _MedicationDetailsPageState extends State<MedicationDetailsPage> {
 
   PreferredSizeWidget _buildAppBar(BuildContext context) {
     return AppBar(
-      title: const Text("Medication Details"),
+      title: Text(AppLocalizations.of(context)!.medicationDetails),
       backgroundColor: Colors.white,
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final intakeOptions = {
+      "None": AppLocalizations.of(context)!.none,
+      "Before meal": AppLocalizations.of(context)!.beforeMeal,
+      "With meal": AppLocalizations.of(context)!.withMeal,
+      "After meal": AppLocalizations.of(context)!.afterMeal,
+      "Custom entry": AppLocalizations.of(context)!.customEntry,
+    };
+
     if (isLoading) {
       return Scaffold(
           appBar: _buildAppBar(context),
@@ -272,7 +282,8 @@ class _MedicationDetailsPageState extends State<MedicationDetailsPage> {
 
     String frequency = medData!['frequency'] ?? '';
     bool isTwiceADay = frequency == "Twice a day";
-    int currentInventory = int.tryParse(medData!['currentInventory'].toString()) ?? 0;
+    int currentInventory =
+        int.tryParse(medData!['currentInventory'].toString()) ?? 0;
     String intakeAdvice = medData!['intakeAdvice'] ?? 'None';
     TextEditingController intakeController = TextEditingController(
       text: medData!['customIntakeAdvice'] ?? '',
@@ -288,7 +299,7 @@ class _MedicationDetailsPageState extends State<MedicationDetailsPage> {
           children: [
             _buildSection(
               icon: Icons.calendar_today,
-              title: "Frequency",
+              title: (AppLocalizations.of(context)!.frequency),
               value: frequency,
               field: "frequency",
               onTap: () {
@@ -300,42 +311,40 @@ class _MedicationDetailsPageState extends State<MedicationDetailsPage> {
                       onSave: (Map<String, dynamic> data) async {
                         await _updateData("frequency", data['frequency']);
                         if (data.containsKey('specificDays')) {
-                          await _updateData("specificDays", data['specificDays']);
+                          await _updateData(
+                              "specificDays", data['specificDays']);
                         }
                       },
                     ),
                   ),
                 );
               },
-
             ),
-
             for (int i = 0; i < (medData!['reminderTimes']?.length ?? 0); i++)
               _buildSection(
                 icon: Icons.alarm,
-                title: "Reminder Time ",
+                title: AppLocalizations.of(context)!.reminderTime,
                 value: medData!['reminderTimes'][i] ?? 'N/A',
                 field: "reminderTime\${i + 1}",
                 onTap: () => _showTimePickerForReminder(i),
               ),
-
             if (isTwiceADay && (medData!['reminderTimes']?.length ?? 0) < 2)
               _buildSection(
                 icon: Icons.alarm,
-                title: "Reminder Time \${medData!['reminderTimes']?.length + 1}",
+                title:
+                    "Reminder Time \${medData!['reminderTimes']?.length + 1}",
                 value: 'N/A',
                 field: "reminderTime\${medData!['reminderTimes']?.length + 1}",
               ),
-
             _buildInventoryControl(
               icon: Icons.inventory,
-              title: "Current Inventory",
+              title: AppLocalizations.of(context)!.currentInventoryy,
               field: "currentInventory",
               value: currentInventory,
             ),
             _buildSection(
               icon: Icons.straighten,
-              title: "Unit",
+              title: AppLocalizations.of(context)!.dosage,
               value: medData!['unit'] ?? 'N/A',
               field: "unit",
               onTap: () {
@@ -355,38 +364,32 @@ class _MedicationDetailsPageState extends State<MedicationDetailsPage> {
             Card(
               margin: const EdgeInsets.symmetric(vertical: 10),
               child: ListTile(
-                leading: const CircleAvatar(
-                  backgroundColor: Colors.blueAccent,
-                  child: Icon(Icons.fastfood, color: Colors.white),
-                ),
-                title: const Text("Intake Advice"),
-                subtitle: DropdownButton<String>(
-                  value: intakeAdvice == "Custom" ? "Custom entry" : intakeAdvice,
-                  isExpanded: true,
-                  underline: const SizedBox(),
-                  items: [
-                    "None",
-                    "Before meal",
-                    "With meal",
-                    "After meal",
-                    "Custom entry",
-                  ].map((option) {
-                    return DropdownMenuItem<String>(
-                      value: option,
-                      child: Text(option),
-                    );
-                  }).toList(),
-                  onChanged: (value) {
-                    if (value == "Custom entry") {
-                      _showCustomInputDialog(intakeController);
-                    } else {
-                      _updateData("intakeAdvice", value!);
-                    }
-                  },
-                ),
-              ),
+                  leading: const CircleAvatar(
+                    backgroundColor: Colors.blueAccent,
+                    child: Icon(Icons.fastfood, color: Colors.white),
+                  ),
+                  title: Text(AppLocalizations.of(context)!.intakeAdvice),
+                  subtitle: DropdownButton<String>(
+                    value: intakeAdvice == "Custom"
+                        ? "Custom entry"
+                        : intakeAdvice,
+                    isExpanded: true,
+                    underline: const SizedBox(),
+                    items: intakeOptions.entries.map((entry) {
+                      return DropdownMenuItem<String>(
+                        value: entry.key,
+                        child: Text(entry.value),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      if (value == "Custom entry") {
+                        _showCustomInputDialog(intakeController);
+                      } else {
+                        _updateData("intakeAdvice", value!);
+                      }
+                    },
+                  )),
             ),
-
           ],
         ),
       ),
@@ -395,7 +398,7 @@ class _MedicationDetailsPageState extends State<MedicationDetailsPage> {
         child: ElevatedButton.icon(
           onPressed: _confirmDelete,
           icon: const Icon(Icons.delete),
-          label: const Text("Delete Medication"),
+          label: Text(AppLocalizations.of(context)!.deleteMedication),
           style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
         ),
       ),

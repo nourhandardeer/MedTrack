@@ -13,6 +13,8 @@ import 'package:medtrack/pages/setting/settings_page.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 //import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:medtrack/main.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -71,7 +73,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
     if (!status && FirebaseAuth.instance.currentUser != null) {
       await NotificationService.scheduleDailyMedReminders(user.uid);
+      await NotificationService.rescheduleUpcomingAppointments(user.uid);
+
       print("👤 User logged in: ${user.uid}, and notifications scheduled");
+      print(
+          "📅 User logged in: ${user.uid}, and Appointments notifications scheduled");
     } else {
       print(
           "⛔ No medication notifications scheduled for emergency contact user: ${user.uid}");
@@ -357,6 +363,7 @@ class _HomeScreenState extends State<HomeScreen> {
       height: 110, // ✅ ensure full rendering of weekdays
       padding: const EdgeInsets.symmetric(horizontal: 8),
       child: TableCalendar(
+        locale: Localizations.localeOf(context).languageCode,
         firstDay: DateTime.utc(2020, 1, 1),
         lastDay: DateTime.utc(2030, 12, 31),
         focusedDay: _focusedDay,
@@ -463,8 +470,10 @@ class _HomeScreenState extends State<HomeScreen> {
             if (appointmentDay == oneDayAfter) {
               final doctorName = data['doctorName'] ?? 'Unknown';
               final appointmentTime = data['appointmentTime'] ?? 'Unknown';
-              reminders.add(
-                  "you have an appointment tomorrow with Dr. $doctorName at $appointmentTime");
+              final message = AppLocalizations.of(context)!
+                  .appointmentTomorrow(doctorName, appointmentTime);
+
+              reminders.add(message);
             }
           } catch (e) {
             print(" Error parsing date: $appointmentDateStr — $e");
@@ -473,7 +482,8 @@ class _HomeScreenState extends State<HomeScreen> {
         }
 
         if (filteredAppointments.isEmpty && reminders.isEmpty) {
-          return const Center(child: Text("No appointments for this day"));
+          return Center(
+              child: Text(AppLocalizations.of(context)!.noAppointments));
         }
 
         return Column(
@@ -1150,8 +1160,8 @@ class _HomeScreenState extends State<HomeScreen> {
           const SizedBox(height: 10),
           _buildCalendar(),
           const SizedBox(height: 10),
-          const Text(
-            "Medications",
+          Text(
+            AppLocalizations.of(context)!.medications,
             style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.bold,
@@ -1167,7 +1177,7 @@ class _HomeScreenState extends State<HomeScreen> {
           const SizedBox(height: 10),
           _buildMedicationsList(),
           const SizedBox(height: 20),
-          const Text("Appointments",
+          Text(AppLocalizations.of(context)!.appointments,
               style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.bold,
@@ -1239,15 +1249,15 @@ class _HomeScreenState extends State<HomeScreen> {
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         selectedItemColor: Colors.blue,
         unselectedItemColor: Colors.grey,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+        items: [
+           BottomNavigationBarItem(icon: Icon(Icons.home), label:AppLocalizations.of(context)!.home),
+           BottomNavigationBarItem(
+              icon: Icon(Icons.auto_mode), label: AppLocalizations.of(context)!.refills),
           BottomNavigationBarItem(
-              icon: Icon(Icons.auto_mode), label: 'Refills'),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.medication_liquid_outlined),
-            label: 'Medications',
+            icon: const Icon(Icons.medication_liquid_outlined),
+            label: AppLocalizations.of(context)!.medications,
           ),
-          BottomNavigationBarItem(icon: Icon(Icons.menu), label: 'Manage'),
+           BottomNavigationBarItem(icon: Icon(Icons.menu), label:AppLocalizations.of(context)!.manage,),
         ],
       ),
     );

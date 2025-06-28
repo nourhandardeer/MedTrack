@@ -4,6 +4,8 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 // صفحة تفاصيل إعادة التعبئة (تفاصيل الدواء)
 class RefillDetailsPage extends StatefulWidget {
@@ -194,25 +196,25 @@ class _RefillDetailsPageState extends State<RefillDetailsPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildDetailRow(Icons.medical_services, "Medication",
+                    _buildDetailRow(Icons.medical_services, (AppLocalizations.of(context)!.medication),
                         widget.medData["name"] ?? "Unknown"),
-                    _buildDetailRow(Icons.format_list_numbered, "Dosage",
+                    _buildDetailRow(Icons.format_list_numbered, (AppLocalizations.of(context)!.dosage),
                         widget.medData["dosage"] ?? "Not specified"),
-                    _buildDetailRow(Icons.inventory, "Current Inventory",
+                    _buildDetailRow(Icons.inventory, AppLocalizations.of(context)!.currentInventoryy,
                         "${widget.medData["currentInventory"] ?? "0"} ${widget.medData["unit"] ?? ""}"),
-                    _buildDetailRow(Icons.access_time, "Reminder Time",
+                    _buildDetailRow(Icons.access_time, AppLocalizations.of(context)!.reminderTime,
                         widget.medData["reminderTimes"] ?? "Not set"),
                     _buildDetailRow(
                         Icons.date_range,
-                        "Refill When Inventory <= ",
+                        AppLocalizations.of(context)!.refillThreshold,
                         "${widget.medData["remindMeWhen"] ?? "0"} ${widget.medData["unit"] ?? ""}"),
                   ],
                 ),
               ),
             ),
             const SizedBox(height: 20),
-            const Text(
-              "Find a Nearby Pharmacy",
+             Text(
+              AppLocalizations.of(context)!.findPharmacy,
               style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 10),

@@ -6,6 +6,8 @@ import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:medtrack/main.dart';
 
 class EditProfilePage extends StatefulWidget {
   @override
@@ -104,11 +106,11 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
           // Show success message
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("Profile image updated successfully!")),
+            SnackBar(content: Text(AppLocalizations.of(context)!.profileImageUpdatedSuccess),),
           );
         }
       } else {
-        throw Exception("Failed to upload image");
+        throw Exception(Text(AppLocalizations.of(context)!.profileImageUpdatedFailed),);
       }
     } catch (e) {
       // Handle any errors during the upload process
@@ -133,7 +135,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
         });
 
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Profile updated successfully!")),
+          SnackBar(content: Text(AppLocalizations.of(context)!.profileupdated),),
         );
         Navigator.pop(context);
       }
@@ -143,7 +145,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Edit Profile")),
+      appBar: AppBar(title: Text(AppLocalizations.of(context)!.eeditProfile),),
       body: Padding(
         padding: EdgeInsets.all(16.0),
         child: Form(
@@ -165,40 +167,40 @@ class _EditProfilePageState extends State<EditProfilePage> {
                         ),
                 ),
                 SizedBox(height: 8),
-                Text("Tap image to change"),
+                Text(AppLocalizations.of(context)!.imageChange),
                 TextFormField(
                   controller: _firstNameController,
-                  decoration: InputDecoration(labelText: "First Name"),
+                  decoration: InputDecoration(labelText: AppLocalizations.of(context)!.firstName),
                   validator: (value) =>
                       value!.isEmpty ? "Enter your first name" : null,
                 ),
                 TextFormField(
                   controller: _lastNameController,
-                  decoration: InputDecoration(labelText: "Last Name"),
+                  decoration: InputDecoration(labelText: AppLocalizations.of(context)!.lastName),
                   validator: (value) =>
                       value!.isEmpty ? "Enter your last name" : null,
                 ),
                 TextFormField(
                   controller: _phoneController,
-                  decoration: InputDecoration(labelText: "Phone"),
+                  decoration: InputDecoration(labelText:AppLocalizations.of(context)!.phone),
                   validator: (value) =>
                       value!.isEmpty ? "Enter your phone number" : null,
                 ),
                 TextFormField(
                   controller: _ageController,
-                  decoration: InputDecoration(labelText: "Age"),
+                  decoration: InputDecoration(labelText:AppLocalizations.of(context)!.age),
                   //  validator: (value) => value!.isEmpty ? "Enter your age" : null,
                 ),
                 TextFormField(
                   controller: _illnesses,
-                  decoration: InputDecoration(labelText: "Illnesses"),
+                  decoration: InputDecoration(labelText: AppLocalizations.of(context)!.illnesses),
                   keyboardType: TextInputType.number,
                   //  validator: (value) => value!.isEmpty ? "Enter your illnesses" : null,
                 ),
                 SizedBox(height: 20),
                 ElevatedButton(
                   onPressed: _updateProfile,
-                  child: Text("Save Changes"),
+                  child: Text(AppLocalizations.of(context)!.saveChanges),
                 ),
               ],
             ),

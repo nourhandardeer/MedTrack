@@ -7,6 +7,8 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../pages/EditAppointmentPage.dart';
 import '../pages/EditDoctorPage.dart';
 import '../services/firestore_service.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class ManagePage extends StatefulWidget {
   ManagePage({super.key});
@@ -78,12 +80,12 @@ class _ManagePageState extends State<ManagePage> {
           child: Scaffold(
             appBar: AppBar(
               toolbarHeight: 0,
-              bottom: const TabBar(
+              bottom: TabBar(
                 indicatorColor: Colors.blue,
                 labelColor: Colors.blue,
                 tabs: [
-                  Tab(text: "Appointments", icon: Icon(Icons.event)),
-                  Tab(text: "Doctors", icon: Icon(FontAwesomeIcons.userDoctor)),
+                  Tab(text: AppLocalizations.of(context)!.appointments, icon: const Icon(Icons.event)),
+                  Tab(text:  AppLocalizations.of(context)!.doctors, icon: Icon(FontAwesomeIcons.userDoctor)),
                 ],
               ),
             ),
@@ -139,7 +141,7 @@ class _ManagePageState extends State<ManagePage> {
           return const Center(child: CircularProgressIndicator());
         }
         if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
-          return const Center(child: Text("No doctors found."));
+          return  Center(child: Text(AppLocalizations.of(context)!.noDoctorsFound));
         }
 
         final doctors = snapshot.data!;
@@ -186,7 +188,9 @@ class _ManagePageState extends State<ManagePage> {
                   subtitle: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text("Specialty: ${doctor['specialty']}",
+                      Text(AppLocalizations.of(context)!
+      .specialty
+      .replaceAll('{specialty}', doctor['specialty'] ?? ''),
                           style: const TextStyle(
                               fontSize: 10, color: Colors.grey)),
                     ],
@@ -267,9 +271,11 @@ class _ManagePageState extends State<ManagePage> {
           subtitle: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text("Date: ${appointment['appointmentDate']}",
+              Text(AppLocalizations.of(context)!
+      .dateWithValue(appointment['appointmentDate'] ?? ''),
                   style: const TextStyle(fontSize: 10, color: Colors.grey)),
-              Text("Time: ${appointment['appointmentTime']}",
+              Text(AppLocalizations.of(context)!
+      .timeWithValue(appointment['appointmentTime'] ?? ''),
                   style: const TextStyle(fontSize: 10, color: Colors.grey)),
             ],
           ),
@@ -354,11 +360,11 @@ class _ManagePageState extends State<ManagePage> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text('Choose an Option',
+             Text(AppLocalizations.of(context)!.chooseOption,
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
             ListTile(
               leading: const Icon(Icons.event, color: Colors.blue),
-              title: const Text('Add Appointment'),
+              title: Text(AppLocalizations.of(context)!.addAppointment),
               onTap: () {
                 Navigator.pop(context);
                 Navigator.push(
@@ -369,7 +375,7 @@ class _ManagePageState extends State<ManagePage> {
             ),
             ListTile(
               leading: const Icon(FontAwesomeIcons.userDoctor),
-              title: const Text('Add Doctor'),
+              title: Text(AppLocalizations.of(context)!.addDoctor),
               onTap: () {
                 Navigator.pop(context);
                 Navigator.push(context,
@@ -383,7 +389,7 @@ class _ManagePageState extends State<ManagePage> {
                 minimumSize: const Size(double.infinity, 50),
               ),
               onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel',
+              child:  Text(AppLocalizations.of(context)!.cancel,
                   style: TextStyle(color: Colors.black, fontSize: 18)),
             ),
           ],

@@ -7,6 +7,8 @@ import 'package:medtrack/home.dart';
 import '../services/notification_service.dart';
 
 import '../services/firestore_service.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class AddAppointment extends StatefulWidget {
   const AddAppointment({super.key});
@@ -114,7 +116,12 @@ class _AddAppointmentState extends State<AddAppointment> {
         selectedTime!.minute,
       );
 
-      // Schedule notification 30 minutes before appointment
+      // Schedule notification 60 minutes before appointment
+      DateTime today = DateTime.now();
+      bool isSameDay = today.year == selectedDate!.year &&
+                 today.month == selectedDate!.month &&
+                 today.day == selectedDate!.day;
+      if (isSameDay) {
       final DateTime reminderTime =
           appointmentDateTime.subtract(const Duration(minutes: 60));
 
@@ -133,6 +140,9 @@ class _AddAppointmentState extends State<AddAppointment> {
             'تذكير! لديك موعد مع الدكتور ${doctorNameController.text} في الساعة ${selectedTime!.format(context)}.',
       );
       print('Appointment Notification scheduled for $reminderTime');
+      } else {
+  print("Notification not scheduled because appointment is not today.");
+}
 
       Navigator.pop(context);
     } catch (e) {
@@ -204,7 +214,7 @@ class _AddAppointmentState extends State<AddAppointment> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('New Appointment')),
+      appBar: AppBar(title: Text(AppLocalizations.of(context)!.newAppointment)),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: SingleChildScrollView(
@@ -214,7 +224,7 @@ class _AddAppointmentState extends State<AddAppointment> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Doctor Name',
+                   Text( AppLocalizations.of(context)!.doctorName,
                       style:
                           TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 8),
@@ -250,11 +260,11 @@ class _AddAppointmentState extends State<AddAppointment> {
                   const SizedBox(height: 16),
                 ],
               ),
-              _buildTextField('Doctor Phone', doctorPhoneController),
-              _buildTextField('Specialty', specialtyController),
-              _buildTextField('Location', locationController),
-              _buildTextField('Notes (Optional)', notesController),
-              const Text('Date',
+              _buildTextField( AppLocalizations.of(context)!.phone, doctorPhoneController),
+              _buildTextField(AppLocalizations.of(context)!.specialty, specialtyController),
+              _buildTextField(AppLocalizations.of(context)!.location, locationController),
+              _buildTextField( AppLocalizations.of(context)!.notes, notesController),
+               Text(AppLocalizations.of(context)!.date,
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
               GestureDetector(
@@ -269,13 +279,13 @@ class _AddAppointmentState extends State<AddAppointment> {
                   child: Text(
                     selectedDate != null
                         ? DateFormat('EEE, dd MMM yyyy').format(selectedDate!)
-                        : 'Select a date',
+                        : AppLocalizations.of(context)!.selectDate,
                     style: const TextStyle(fontSize: 16),
                   ),
                 ),
               ),
               const SizedBox(height: 16),
-              const Text('Time',
+               Text(AppLocalizations.of(context)!.time,
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
               GestureDetector(
@@ -290,7 +300,7 @@ class _AddAppointmentState extends State<AddAppointment> {
                   child: Text(
                     selectedTime != null
                         ? selectedTime!.format(context)
-                        : 'Select a time',
+                        : AppLocalizations.of(context)!.selectTime,
                     style: const TextStyle(fontSize: 16),
                   ),
                 ),
@@ -306,7 +316,7 @@ class _AddAppointmentState extends State<AddAppointment> {
                     ? const CircularProgressIndicator(
                         color: Colors.white,
                       )
-                    : const Text('Save Appointment',
+                    :  Text(AppLocalizations.of(context)!.save,
                         style: TextStyle(color: Colors.white)),
               ),
             ],

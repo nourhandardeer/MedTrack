@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class EditDoctorPage extends StatefulWidget {
   final String doctorId;
@@ -46,7 +48,7 @@ class _EditDoctorPageState extends State<EditDoctorPage> {
     });
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Doctor updated successfully."), backgroundColor: Colors.green),
+       SnackBar(content: Text(AppLocalizations.of(context)!.doctorUpdatedSuccess), backgroundColor: Colors.green),
     );
     Navigator.pop(context);
   }
@@ -81,7 +83,7 @@ class _EditDoctorPageState extends State<EditDoctorPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Edit Doctor"),
+        title: Text(AppLocalizations.of(context)!.editDoctor),
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
         elevation: 1,
@@ -93,16 +95,16 @@ class _EditDoctorPageState extends State<EditDoctorPage> {
           key: _formKey,
           child: Column(
             children: [
-              _buildCardField(icon: Icons.person, label: "Doctor Name", controller: _nameController),
-              _buildCardField(icon: Icons.phone, label: "Phone", controller: _phoneController, keyboardType: TextInputType.phone),
-              _buildCardField(icon: Icons.medical_services, label: "Specialty", controller: _specialtyController),
-              _buildCardField(icon: Icons.location_on, label: "Location", controller: _locationController),
-              _buildCardField(icon: Icons.note, label: "Notes", controller: _notesController, requiredField: false),
+              _buildCardField(icon: Icons.person, label: AppLocalizations.of(context)!.doctorName, controller: _nameController),
+              _buildCardField(icon: Icons.phone, label: AppLocalizations.of(context)!.phone, controller: _phoneController, keyboardType: TextInputType.phone),
+              _buildCardField(icon: Icons.medical_services, label: AppLocalizations.of(context)!.specialty, controller: _specialtyController),
+              _buildCardField(icon: Icons.location_on, label: AppLocalizations.of(context)!.location, controller: _locationController),
+              _buildCardField(icon: Icons.note, label: AppLocalizations.of(context)!.notes, controller: _notesController, requiredField: false),
               const SizedBox(height: 24),
               ElevatedButton.icon(
                 onPressed: _saveChanges,
                 icon: const Icon(Icons.save),
-                label: const Text("Save Changes"),
+                label: Text(AppLocalizations.of(context)!.saveChanges),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blue,
                   minimumSize: const Size.fromHeight(50),

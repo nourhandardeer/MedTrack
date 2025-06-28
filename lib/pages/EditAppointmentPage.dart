@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class EditAppointmentPage extends StatefulWidget {
   final String appointmentId;
@@ -52,7 +54,7 @@ class _EditAppointmentPageState extends State<EditAppointmentPage> {
     });
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Appointment updated successfully."), backgroundColor: Colors.green),
+       SnackBar(content:Text(AppLocalizations.of(context)!.appointmentUpdatedSuccess), backgroundColor: Colors.green),
     );
     Navigator.pop(context);
   }
@@ -85,7 +87,7 @@ class _EditAppointmentPageState extends State<EditAppointmentPage> {
 
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
-      title: const Text("Edit Appointment"),
+      title: Text(AppLocalizations.of(context)!.editAppointment),
       backgroundColor: Colors.white,
       foregroundColor: Colors.black,
       elevation: 1,
@@ -103,18 +105,18 @@ class _EditAppointmentPageState extends State<EditAppointmentPage> {
           key: _formKey,
           child: Column(
             children: [
-              _buildCardField(icon: Icons.person, label: "Doctor Name", controller: _doctorNameController),
-              _buildCardField(icon: Icons.phone, label: "Phone", controller: _phoneController, keyboardType: TextInputType.phone),
-              _buildCardField(icon: Icons.medical_services, label: "Specialty", controller: _specialtyController),
-              _buildCardField(icon: Icons.location_on, label: "Location", controller: _locationController),
-              _buildCardField(icon: Icons.note, label: "Notes", controller: _notesController, requiredField: false),
-              _buildCardField(icon: Icons.date_range, label: "Date", controller: _dateController),
-              _buildCardField(icon: Icons.access_time, label: "Time", controller: _timeController),
+              _buildCardField(icon: Icons.person, label: AppLocalizations.of(context)!.doctorName, controller: _doctorNameController),
+              _buildCardField(icon: Icons.phone, label: AppLocalizations.of(context)!.phone, controller: _phoneController, keyboardType: TextInputType.phone),
+              _buildCardField(icon: Icons.medical_services, label: AppLocalizations.of(context)!.specialty, controller: _specialtyController),
+              _buildCardField(icon: Icons.location_on, label: AppLocalizations.of(context)!.location, controller: _locationController),
+              _buildCardField(icon: Icons.note, label: AppLocalizations.of(context)!.notes, controller: _notesController, requiredField: false),
+              _buildCardField(icon: Icons.date_range, label: AppLocalizations.of(context)!.date, controller: _dateController),
+              _buildCardField(icon: Icons.access_time, label: AppLocalizations.of(context)!.time, controller: _timeController),
               const SizedBox(height: 24),
               ElevatedButton.icon(
                 onPressed: _saveChanges,
                 icon: const Icon(Icons.save),
-                label: const Text("Save Changes"),
+                label: Text(AppLocalizations.of(context)!.saveChanges),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blue,
                   minimumSize: const Size.fromHeight(50),

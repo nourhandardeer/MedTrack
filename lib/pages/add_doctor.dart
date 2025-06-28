@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/firestore_service.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class AddDoctor extends StatefulWidget {
   @override
@@ -119,7 +121,7 @@ class _AddDoctorState extends State<AddDoctor> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('New Doctor')),
+      appBar: AppBar(title: Text(AppLocalizations.of(context)!.newDoctor)),
       body: isLoading
           ? Center(child: CircularProgressIndicator())
           : Padding(
@@ -131,23 +133,23 @@ class _AddDoctorState extends State<AddDoctor> {
                     children: [
                       buildTextField(
                           controller: nameController,
-                          label: 'Doctor Name',
+                          label: AppLocalizations.of(context)!.doctorName,
                           style: TextStyle(color: Colors.black)),
                       SizedBox(height: 16),
                       buildTextField(
                           controller: phoneController,
-                          label: 'Doctor Phone',
+                          label: AppLocalizations.of(context)!.phone,
                           keyboardType: TextInputType.phone,
                           style: TextStyle(color: Colors.black)),
                       SizedBox(height: 16),
                       buildTextField(
                           controller: specialtyController,
-                          label: 'Specialty',
+                          label: AppLocalizations.of(context)!.specialty,
                           style: TextStyle(color: Colors.black)),
                       SizedBox(height: 16),
                       buildTextField(
                           controller: locationController,
-                          label: 'Location',
+                          label: AppLocalizations.of(context)!.location,
                           style: TextStyle(color: Colors.black)),
                       SizedBox(height: 24),
                       SizedBox(
@@ -160,7 +162,7 @@ class _AddDoctorState extends State<AddDoctor> {
                           },
                           child: Padding(
                             padding: EdgeInsets.symmetric(vertical: 16),
-                            child: Text('Save Doctor',
+                            child: Text(AppLocalizations.of(context)!.save,
                                 style: TextStyle(
                                     fontSize: 16, color: Colors.white)),
                           ),

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'date.dart';
 import 'refillrequest.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class TimesPage extends StatefulWidget {
   final String medicationName;
@@ -27,14 +29,21 @@ class _TimesPageState extends State<TimesPage> {
   String? selectedFrequency;
   bool showOtherOptions = false;
 
-  final List<String> frequencyOptions = [
-    "Once a day",
-    "Twice a day",
-    "3 times a day",
-    "Once a week",
-    "Specific days of the week",
-    "Only as needed",
-  ];
+Map<String, String> frequencyOptions = {};
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final local = AppLocalizations.of(context)!;
+    frequencyOptions = {
+      "Once a day": local.onceADay,
+      "Twice a day": local.twiceADay,
+      "3 times a day": local.threeTimesADay,
+      "Once a week": local.onceAWeek,
+      "Specific days of the week": local.specificDays,
+      "Only as needed": local.asNeeded,
+    };
+  }
 
   bool _isLoading = false;
 
@@ -133,7 +142,7 @@ class _TimesPageState extends State<TimesPage> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        title: const Text("Select Frequency",
+        title: Text(AppLocalizations.of(context)!.selectFrequency,
             style: TextStyle(color: Colors.black)),
         iconTheme: const IconThemeData(color: Colors.black),
       ),
@@ -142,28 +151,24 @@ class _TimesPageState extends State<TimesPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              "How often do you take this medication?",
+             Text(
+              AppLocalizations.of(context)!.medicationFrequencyQuestion,
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 20),
             Expanded(
               child: ListView(
                 children: [
-                  ...frequencyOptions.map((frequency) {
+                  ...frequencyOptions.entries.map((entry) {
                     return RadioListTile<String>(
-                      title: Text(frequency),
-                      value: frequency,
+                      title: Text(entry.value),
+                      value: entry.key,
                       groupValue: selectedFrequency,
                       onChanged: (value) {
-                        if (value == "Other") {
-                          _toggleOtherOptions();
-                        } else {
-                          setState(() {
-                            selectedFrequency = value;
-                            showOtherOptions = false;
-                          });
-                        }
+                        setState(() {
+                          selectedFrequency = value;
+                          showOtherOptions = false;
+                        });
                       },
                     );
                   }).toList(),
@@ -254,8 +259,8 @@ class _TimesPageState extends State<TimesPage> {
                     strokeWidth: 2.5,
                   ),
                 )
-              : const Text(
-                  "Next",
+              : Text(
+                  AppLocalizations.of(context)!.next,
                   style: TextStyle(fontSize: 18, color: Colors.white),
                 ),
         ),

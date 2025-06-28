@@ -5,6 +5,8 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 
 import '../EmergencyContactHelper.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:medtrack/main.dart';
 
 class EmergencyContactPage extends StatefulWidget {
   const EmergencyContactPage({super.key});
@@ -197,7 +199,7 @@ class _EmergencyContactPageState extends State<EmergencyContactPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Emergency Contacts")),
+      appBar: AppBar(title: Text(AppLocalizations.of(context)!.emergencyContacts)),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -243,7 +245,7 @@ class _EmergencyContactPageState extends State<EmergencyContactPage> {
             ElevatedButton(
               onPressed: _addEmergencyContact,
               style: ElevatedButton.styleFrom(backgroundColor: Colors.green, padding: EdgeInsets.symmetric(vertical: 12)),
-              child: Text("Add New Contact", style: TextStyle(fontSize: 18, color: Colors.white)),
+              child: Text(AppLocalizations.of(context)!.addContact, style: TextStyle(fontSize: 18, color: Colors.white)),
             ),
           ],
         ),

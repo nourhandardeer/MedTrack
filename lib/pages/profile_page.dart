@@ -3,6 +3,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../services/UpdateCurrentUserLocation.dart';
 import '../services/firestore_service.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -36,6 +38,7 @@ class _ProfilePageState extends State<ProfilePage> {
       _isEmergencyContact = result;
     });
   }
+
   Future<void> _fetchUserProfile() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
@@ -163,7 +166,7 @@ class _ProfilePageState extends State<ProfilePage> {
     return Scaffold(
       appBar: AppBar(
           title: Text(
-            'Profile',
+            AppLocalizations.of(context)!.profile,
             style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
           centerTitle: true),
@@ -185,9 +188,10 @@ class _ProfilePageState extends State<ProfilePage> {
                   style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
               SizedBox(height: 4),
               if (!_isEmergencyContact)
-                Text('Age: $_age | $_illnesses',
+                Text(
+                    AppLocalizations.of(context)!
+                        .ageAndIllnesses(_age, _illnesses),
                     style: TextStyle(fontSize: 18, color: Colors.grey)),
-
               SizedBox(height: 16),
               if (_linkedPatientName != null)
                 Container(
@@ -198,7 +202,8 @@ class _ProfilePageState extends State<ProfilePage> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
-                    "You are an emergency contact for $_linkedPatientName.",
+                    AppLocalizations.of(context)!
+                        .linkedAsEmergencyContact(_linkedPatientName ?? ""),
                     style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -207,32 +212,36 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                 ),
               if (!_isEmergencyContact)
-                Text('Emergency Contacts',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                Text(
+                  AppLocalizations.of(context)!.emergencyContacts,
+                    style:
+                        TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
               SizedBox(height: 8),
               if (!_isEmergencyContact)
-              Expanded(
-                child: _emergencyContacts.isEmpty
-                    ? Text("No emergency contacts available.")
-                    : ListView.separated(
-                        itemCount: _emergencyContacts.length,
-                        separatorBuilder: (_, __) => Divider(),
-                        itemBuilder: (context, index) {
-                          var contact = _emergencyContacts[index];
-                          return ListTile(
-                            leading: Icon(Icons.phone, color: Colors.green),
-                            title: Text(contact["name"],
-                                style: TextStyle(
-                                    fontSize: 18, fontWeight: FontWeight.bold)),
-                            subtitle: Text('${contact["phone"]}'),
-                            trailing: IconButton(
-                              icon: Icon(Icons.delete, color: Colors.red),
-                              onPressed: () => _deleteEmergencyContact(contact),
-                            ),
-                          );
-                        },
-                      ),
-              ),
+                Expanded(
+                  child: _emergencyContacts.isEmpty
+                      ? Text("No emergency contacts available.")
+                      : ListView.separated(
+                          itemCount: _emergencyContacts.length,
+                          separatorBuilder: (_, __) => Divider(),
+                          itemBuilder: (context, index) {
+                            var contact = _emergencyContacts[index];
+                            return ListTile(
+                              leading: Icon(Icons.phone, color: Colors.green),
+                              title: Text(contact["name"],
+                                  style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold)),
+                              subtitle: Text('${contact["phone"]}'),
+                              trailing: IconButton(
+                                icon: Icon(Icons.delete, color: Colors.red),
+                                onPressed: () =>
+                                    _deleteEmergencyContact(contact),
+                              ),
+                            );
+                          },
+                        ),
+                ),
             ],
           ),
         ),

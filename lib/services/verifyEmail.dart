@@ -4,6 +4,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:medtrack/home.dart';
 import 'package:medtrack/pages/profile_setup.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 class VerifyEmailPage extends StatefulWidget {
   final User user;
   final String firstName, lastName, phone, email;
@@ -31,40 +33,40 @@ class _VerifyEmailPageState extends State<VerifyEmailPage> {
   }
 
   void _startEmailCheckTimer() {
-    _timer = Timer.periodic(Duration(seconds: 5), (_) async {
-      await widget.user.reload();
-      var refreshedUser = FirebaseAuth.instance.currentUser;
+  _timer = Timer.periodic(Duration(seconds: 5), (_) async {
+    await FirebaseAuth.instance.currentUser?.reload();
+    var refreshedUser = FirebaseAuth.instance.currentUser;
 
-      if (refreshedUser != null && refreshedUser.emailVerified) {
-        _timer?.cancel();
+    if (refreshedUser != null && refreshedUser.emailVerified) {
+      _timer?.cancel();
 
-        // Save to Firestore ONLY after verification
-        await FirebaseFirestore.instance
-            .collection('users')
-            .doc(widget.user.uid)
-            .set({
-          'firstName': widget.firstName,
-          'lastName': widget.lastName,
-          'email': widget.email,
-          'phone': widget.phone,
-          'isEmergency': false,
-        });
+      // Save to Firestore ONLY after verification
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(refreshedUser.uid)
+          .set({
+        'firstName': widget.firstName,
+        'lastName': widget.lastName,
+        'email': widget.email,
+        'phone': widget.phone,
+        'isEmergency': false,
+      });
 
-        // Navigate to Profile Setup page
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => ProfileSetupPage(
-              userId: widget.user.uid,
-              firstName: widget.firstName,
-              lastName: widget.lastName,
-              phone: widget.phone,
-            ),
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ProfileSetupPage(
+            userId: refreshedUser.uid,
+            firstName: widget.firstName,
+            lastName: widget.lastName,
+            phone: widget.phone,
           ),
-        );
-      }
-    });
-  }
+        ),
+      );
+    }
+  });
+}
+
 
   void _resendVerificationEmail() async {
     if (!canResend) return;
@@ -94,19 +96,20 @@ class _VerifyEmailPageState extends State<VerifyEmailPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Verify Your Email")),
+      appBar: AppBar(title: Text(AppLocalizations.of(context)!.verifyYourEmail)),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text('A verification email was sent to ${widget.email}'),
+            Text('${AppLocalizations.of(context)!.verificationEmailSentTo} ${widget.email}'),
+
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: canResend ? _resendVerificationEmail : null,
-              child: Text('Resend Email'),
+              child:  Text(AppLocalizations.of(context)!.resendEmail),
             ),
             const SizedBox(height: 10),
-            Text('Waiting for verification...'),
+            Text(AppLocalizations.of(context)!.waitingForVerification),
           ],
         ),
       ),

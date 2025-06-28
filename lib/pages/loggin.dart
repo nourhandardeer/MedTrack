@@ -3,6 +3,8 @@ import 'package:medtrack/home.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:medtrack/auth.dart';
 import 'package:medtrack/pages/sign_up.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class LoginScreen extends StatefulWidget {
   LoginScreen({super.key});
@@ -72,7 +74,7 @@ class _LoginScreenState extends State<LoginScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Text('Welcome back',
+              Text(AppLocalizations.of(context)!.welcomeBack,
                   style: TextStyle(
                       fontSize: 29,
                       color: Colors.blue.shade900,
@@ -87,7 +89,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   controller: emailController,
                   keyboardType: TextInputType.emailAddress,
                   decoration: InputDecoration(
-                    labelText: 'Email',
+                    labelText: AppLocalizations.of(context)!.email,
                     labelStyle: TextStyle(fontSize: 18, color: Colors.black),
                     hintText: 'Please enter your email address',
                     hintStyle: TextStyle(fontSize: 13, color: Colors.grey),
@@ -106,7 +108,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   controller: passwordController,
                   obscureText: true,
                   decoration: InputDecoration(
-                    labelText: 'Password',
+                    labelText: AppLocalizations.of(context)!.password,
                     labelStyle: TextStyle(fontSize: 18, color: Colors.black),
                     hintText: 'Enter your Password',
                     hintStyle: TextStyle(fontSize: 13, color: Colors.grey),
@@ -128,7 +130,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               TextButton(
                 onPressed: _resetPassword,
-                child: Text("Forgot Password?",
+                child: Text(AppLocalizations.of(context)!.forgetPassword,
                     style: TextStyle(color: Colors.blue.shade900)),
               ),
               ElevatedButton(
@@ -150,8 +152,8 @@ class _LoginScreenState extends State<LoginScreen> {
                           strokeWidth: 2.5,
                         ),
                       )
-                    : const Text(
-                        "Login",
+                    :  Text(
+                        AppLocalizations.of(context)!.logIn,
                         style: TextStyle(color: Colors.white),
                       ),
               ),
@@ -163,7 +165,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         builder: (context) => const SignUpScreen()),
                   );
                 },
-                child: Text("Don't have an account? Sign up",
+                child: Text(AppLocalizations.of(context)!.noAccount,
                     style: TextStyle(color: Colors.blue.shade900)),
               ),
             ],

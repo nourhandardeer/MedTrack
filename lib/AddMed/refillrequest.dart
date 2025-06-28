@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:medtrack/home.dart'; // Import Home Page
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class RefillRequest extends StatefulWidget {
   final String medicationName;
@@ -80,7 +82,7 @@ class _RefillRequestState extends State<RefillRequest> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Refill Reminder"),
+        title: Text(AppLocalizations.of(context)!.refillReminder),
         backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
@@ -100,8 +102,8 @@ class _RefillRequestState extends State<RefillRequest> {
               color: Colors.blue,
             ),
             const SizedBox(height: 20),
-            const Text(
-              "Do you want to get reminders to refill your medications?",
+             Text(
+              AppLocalizations.of(context)!.refillReminderQuestion,
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -120,8 +122,8 @@ class _RefillRequestState extends State<RefillRequest> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
-                    "Remind me",
+                   Text(
+                    AppLocalizations.of(context)!.remindMe,
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                   Switch(
@@ -142,10 +144,10 @@ class _RefillRequestState extends State<RefillRequest> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Align(
+                   Align(
                     alignment: Alignment.centerLeft,
                     child: Text(
-                      "Current inventory",
+                      AppLocalizations.of(context)!.currentInventoryy,
                       style:
                           TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                     ),
@@ -163,10 +165,10 @@ class _RefillRequestState extends State<RefillRequest> {
                     ),
                   ),
                   const SizedBox(height: 20),
-                  const Align(
+                   Align(
                     alignment: Alignment.centerLeft,
                     child: Text(
-                      "Remind me when remaining",
+                      AppLocalizations.of(context)!.remindWhenRemaining,
                       style:
                           TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                     ),
@@ -207,8 +209,8 @@ class _RefillRequestState extends State<RefillRequest> {
                           strokeWidth: 2.5,
                         ),
                       )
-                    : const Text(
-                        "Save",
+                    :  Text(
+                        AppLocalizations.of(context)!.save,
                         style: TextStyle(fontSize: 18, color: Colors.white),
                       ),
               ),

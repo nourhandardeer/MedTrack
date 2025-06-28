@@ -13,6 +13,8 @@ import 'SetPinPage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:medtrack/auth.dart';
 import 'package:medtrack/pages/HelpPage.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:medtrack/main.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -63,7 +65,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Settings'),
+        title: Text(AppLocalizations.of(context)!.settings),
         centerTitle: true,
       ),
       body: ListView(
@@ -72,8 +74,8 @@ class _SettingsPageState extends State<SettingsPage> {
           // Profile Section
           ListTile(
             leading: Icon(Icons.person, color: Colors.blue),
-            title: Text('Edit Profile'),
-            subtitle: Text('Change name, email, and photo'),
+            title: Text(AppLocalizations.of(context)!.editProfile),
+            subtitle: Text(AppLocalizations.of(context)!.editProfileSub),
             trailing: Icon(Icons.arrow_forward_ios),
             onTap: () {
               Navigator.push(context,
@@ -85,8 +87,8 @@ class _SettingsPageState extends State<SettingsPage> {
           // Notification Settings
           ListTile(
             leading: Icon(Icons.notifications, color: Colors.orange),
-            title: Text('Notifications'),
-            subtitle: Text('Manage alerts and reminders'),
+            title: Text(AppLocalizations.of(context)!.notifications),
+            subtitle: Text(AppLocalizations.of(context)!.notificationsSub),
             trailing: Switch(
               value: _notificationsEnabled,
               onChanged: (bool value) {
@@ -99,8 +101,8 @@ class _SettingsPageState extends State<SettingsPage> {
           // Emergency Contacts
           ListTile(
               leading: Icon(Icons.phone, color: Colors.red),
-              title: Text('Emergency Contacts'),
-              subtitle: Text('Manage emergency numbers'),
+              title: Text(AppLocalizations.of(context)!.emergencyContacts),
+              subtitle: Text(AppLocalizations.of(context)!.emergencyContactsSub),
               trailing: Icon(Icons.arrow_forward_ios),
               onTap: () {
                 if (_isEmergency) {
@@ -131,19 +133,22 @@ class _SettingsPageState extends State<SettingsPage> {
           // Security Settings (Change Password or Set PIN)
           ListTile(
             leading: Icon(Icons.lock, color: Colors.purple),
-            title: Text('Security'),
-            subtitle: Text('Change password or set PIN'),
+            title: Text(AppLocalizations.of(context)!.security),
+            subtitle: Text(AppLocalizations.of(context)!.securitySub),
             trailing: Icon(Icons.arrow_forward_ios),
             onTap: () {
-              _showSecurityOptions(context);
-            },
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => ChangePasswordPage()),
+                );
+              },
           ),
           Divider(),
 
           // Dark Mode Toggle
           ListTile(
             leading: Icon(Icons.dark_mode, color: Colors.black),
-            title: Text('Dark Mode'),
+            title: Text(AppLocalizations.of(context)!.darkMode),
             trailing: Switch(
                 value: themeProvider.isDarkMode,
                 onChanged: (bool value) {
@@ -154,34 +159,33 @@ class _SettingsPageState extends State<SettingsPage> {
 
           ListTile(
             leading: Icon(Icons.delete_forever, color: Colors.red),
-            title: Text('Delete my account'),
+            title: Text(AppLocalizations.of(context)!.deleteAccount),
             onTap: () async {
               final passwordController = TextEditingController();
 
               final confirm = await showDialog<bool>(
                 context: context,
                 builder: (context) => AlertDialog(
-                  title: const Text('Confirm Account Deletion'),
+                  title:  Text(AppLocalizations.of(context)!.confirmDeletion),
                   content: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Text(
-                          'Please enter your password to delete your account.'),
+                      Text(AppLocalizations.of(context)!.enterPasswordToDelete),
                       TextField(
                         controller: passwordController,
                         obscureText: true,
                         decoration:
-                            const InputDecoration(labelText: 'Password'),
+                             InputDecoration(labelText:(AppLocalizations.of(context)!.password),),
                       ),
                     ],
                   ),
                   actions: [
                     TextButton(
                         onPressed: () => Navigator.pop(context, false),
-                        child: const Text('Cancel')),
+                        child: Text(AppLocalizations.of(context)!.cancel),),
                     TextButton(
                         onPressed: () => Navigator.pop(context, true),
-                        child: const Text('Delete')),
+                        child: Text(AppLocalizations.of(context)!.delete),),
                   ],
                 ),
               );
@@ -190,15 +194,15 @@ class _SettingsPageState extends State<SettingsPage> {
                 try {
                   await deleteAccountAndData(passwordController.text.trim());
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                        content: Text('Account deleted successfully')),
+                     SnackBar(
+                        content:Text(AppLocalizations.of(context)!.accountDeleted),),
                   );
                   Navigator.of(context).pushReplacement(
                     MaterialPageRoute(builder: (_) => const SplashScreen()),
                   );
                 } catch (e) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Incorrect password')),
+                    SnackBar(content: Text(AppLocalizations.of(context)!.incorrectPassword)),
                   );
                 }
               }
@@ -209,7 +213,7 @@ class _SettingsPageState extends State<SettingsPage> {
           // Logout Button
           ListTile(
             leading: Icon(Icons.logout, color: Colors.red),
-            title: Text('Logout'),
+            title: Text(AppLocalizations.of(context)!.logout),
             onTap: () async {
               await auth.signOut(); // call your custom function here
 
@@ -223,8 +227,8 @@ class _SettingsPageState extends State<SettingsPage> {
 
           ListTile(
             leading: Icon(Icons.help_outline, color: Colors.teal),
-            title: Text('Help'),
-            subtitle: Text('Watch tutorial videos'),
+            title: Text(AppLocalizations.of(context)!.help),
+            subtitle: Text(AppLocalizations.of(context)!.helpSub),
             trailing: Icon(Icons.arrow_forward_ios),
             onTap: () {
               Navigator.push(
@@ -233,6 +237,17 @@ class _SettingsPageState extends State<SettingsPage> {
               );
             },
           ),
+          Divider(),
+
+          ListTile(
+  leading: Icon(Icons.language, color: Colors.indigo),
+  title: Text(AppLocalizations.of(context)!.language),
+  subtitle: Text(AppLocalizations.of(context)!.changeLanguage),
+  trailing: Icon(Icons.arrow_forward_ios),
+  onTap: () {
+    _showLanguageSelectionDialog(context);
+  },
+),
         ],
       ),
     );
@@ -334,8 +349,37 @@ class _SettingsPageState extends State<SettingsPage> {
     }
   }
 
+  void _showLanguageSelectionDialog(BuildContext context) {
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: Text(AppLocalizations.of(context)!.language),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ListTile(
+            title: Text('English'),
+            onTap: () {
+              MyApp.setLocale(context, const Locale('en'));
+              Navigator.pop(context);
+            },
+          ),
+          ListTile(
+            title: Text('العربية'),
+            onTap: () {
+              MyApp.setLocale(context, const Locale('ar'));
+              Navigator.pop(context);
+            },
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+
   // Function to show the Security options dialog
-  void _showSecurityOptions(BuildContext context) {
+ /* void _showSecurityOptions(BuildContext context) {
     showModalBottomSheet(
       context: context,
       builder: (context) {
@@ -366,5 +410,5 @@ class _SettingsPageState extends State<SettingsPage> {
         );
       },
     );
-  }
+  }*/
 }

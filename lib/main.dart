@@ -15,6 +15,8 @@ import 'package:medtrack/pages/setting/PinVerificationPage.dart'; // Import the 
 import 'package:cloudinary_url_gen/cloudinary.dart';
 import 'package:cloudinary_flutter/cloudinary_context.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -56,50 +58,71 @@ void main() async {
   );
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return ScreenUtilInit(
-      designSize: const Size(375, 812), // Base design (iPhone 11)
-      minTextAdapt: true,
-      splitScreenMode: true,
-      builder: (context, child) {
-        final themeProvider = Provider.of<ThemeProvider>(context);
+  State<MyApp> createState() => _MyAppState();
 
-        return MaterialApp(
-          debugShowCheckedModeBanner: false,
-          //builder: DevicePreview.appBuilder,
-          themeMode:
-              themeProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light,
-          theme: ThemeData(
-            brightness: Brightness.light,
-            textTheme: const TextTheme(
-              bodyLarge: TextStyle(color: Colors.black),
-              bodyMedium: TextStyle(color: Colors.black87),
-              titleLarge: TextStyle(color: Colors.black),
-            ),
-            colorScheme: const ColorScheme.light(
-              background: Colors.white,
-              onBackground: Colors.black,
-            ),
-          ),
-          darkTheme: ThemeData(
-            brightness: Brightness.dark,
-            textTheme: const TextTheme(
-              bodyLarge: TextStyle(color: Colors.white),
-              bodyMedium: TextStyle(color: Colors.white70),
-              titleLarge: TextStyle(color: Colors.white),
-            ),
-            colorScheme: const ColorScheme.dark(
-              background: Colors.black,
-              onBackground: Colors.white,
-            ),
-          ),
-          home: const AuthCheck(), // Home check
-        );
-      },
+  // طريقة لتغيير اللغة من أي مكان
+  static void setLocale(BuildContext context, Locale newLocale) {
+    final _MyAppState? state = context.findAncestorStateOfType<_MyAppState>();
+    state?.changeLocale(newLocale);
+  }
+}
+
+class _MyAppState extends State<MyApp> {
+  Locale _locale = const Locale('en'); // اللغة الافتراضية
+
+  void changeLocale(Locale newLocale) {
+    setState(() {
+      _locale = newLocale;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      themeMode: themeProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light,
+      theme: ThemeData(
+        brightness: Brightness.light,
+        textTheme: const TextTheme(
+          bodyLarge: TextStyle(color: Colors.black),
+          bodyMedium: TextStyle(color: Colors.black87),
+          titleLarge: TextStyle(color: Colors.black),
+        ),
+        colorScheme: const ColorScheme.light(
+          background: Colors.white,
+          onBackground: Colors.black,
+        ),
+      ),
+      darkTheme: ThemeData(
+        brightness: Brightness.dark,
+        textTheme: const TextTheme(
+          bodyLarge: TextStyle(color: Colors.white),
+          bodyMedium: TextStyle(color: Colors.white70),
+          titleLarge: TextStyle(color: Colors.white),
+        ),
+        colorScheme: const ColorScheme.dark(
+          background: Colors.black,
+          onBackground: Colors.white,
+        ),
+      ),
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [
+        Locale('en'),
+        Locale('ar'),
+      ],
+      locale: _locale,
+      home: const AuthCheck(),
     );
   }
 }

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:medtrack/main.dart';
 
 class ChangePasswordPage extends StatefulWidget {
   @override
@@ -18,7 +20,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Change Password'),
+        title: Text(AppLocalizations.of(context)!.securitySub),
         centerTitle: true,
       ),
       body: Padding(
@@ -32,7 +34,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                 controller: _currentPasswordController,
                 obscureText: true,
                 decoration: InputDecoration(
-                  labelText: 'Current Password',
+                  labelText: (AppLocalizations.of(context)!.currentPassword),
                   border: OutlineInputBorder(),
                 ),
                 validator: (value) {
@@ -49,7 +51,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                 controller: _newPasswordController,
                 obscureText: true,
                 decoration: InputDecoration(
-                  labelText: 'New Password',
+                  labelText: (AppLocalizations.of(context)!.newPassword),
                   border: OutlineInputBorder(),
                 ),
                 validator: (value) {
@@ -68,7 +70,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                 controller: _confirmPasswordController,
                 obscureText: true,
                 decoration: InputDecoration(
-                  labelText: 'Confirm New Password',
+                  labelText: (AppLocalizations.of(context)!.confirmNewPassword),
                   border: OutlineInputBorder(),
                 ),
                 validator: (value) {
@@ -86,7 +88,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
               else
                 ElevatedButton(
                   onPressed: _changePassword,
-                  child: Text('Change Password'),
+                  child: Text(AppLocalizations.of(context)!.securitySub),
                 ),
             ],
           ),

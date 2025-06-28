@@ -5,6 +5,8 @@ import 'package:medtrack/Refills/refill_details.dart';
 import 'package:medtrack/services/notification_service.dart'; // Import NotificationService
 import 'package:intl/intl.dart';
 import '../services/UserLocationHolder.dart'; // تأكد ان المسار صح
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class RefillsPage extends StatefulWidget {
   const RefillsPage({Key? key}) : super(key: key);
@@ -153,15 +155,17 @@ class _RefillsPageState extends State<RefillsPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        "Current Inventory: $inventory ${data["unit"] ?? ""}",
-                        style:
-                            const TextStyle(fontSize: 12, color: Colors.grey),
-                      ),
-                      Text(
-                        "Reminder Time: $reminderTimeStr",
-                        style:
-                            const TextStyle(fontSize: 12, color: Colors.blue),
-                      ),
+        AppLocalizations.of(context)!
+            .currentInventory(inventory.toString(), data["unit"] ?? ""),
+        style:
+            const TextStyle(fontSize: 12, color: Colors.grey),
+      ),
+      Text(
+        AppLocalizations.of(context)!
+            .reminderTimes(reminderTimeStr),
+        style:
+            const TextStyle(fontSize: 12, color: Colors.blue),
+      ),
                     ],
                   ),
                   onTap: () {

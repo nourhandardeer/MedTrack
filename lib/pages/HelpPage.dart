@@ -1,20 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:medtrack/main.dart';
 
 class HelpPage extends StatelessWidget {
-  final List<Map<String, String>> helpVideos = [
-    {'title': 'Add Appointment', 'path': 'videos/addAppointment.mp4'},
-    {'title': 'Add Doctor', 'path': 'videos/addDoctor.mp4'},
-    {'title': 'Add Emergency Contact', 'path': 'videos/addEmergencyContact.mp4'},
-    {'title': 'Add Medicine', 'path': 'videos/addMed.mp4'},
-    {'title': 'Find A Nearby Pharmacy', 'path': 'videos/requestPharmacy.mp4'},
-  ];
-
   @override
   Widget build(BuildContext context) {
+    final List<Map<String, String>> helpVideos = [
+      {'title': AppLocalizations.of(context)!.addAppointment, 'path': 'videos/addAppointment.mp4'},
+      {'title': AppLocalizations.of(context)!.addDoctor, 'path': 'videos/addDoctor.mp4'},
+      {'title': AppLocalizations.of(context)!.addEmergencyContact, 'path': 'videos/addEmergencyContact.mp4'},
+      {'title': AppLocalizations.of(context)!.addMedicine, 'path': 'videos/addMed.mp4'},
+      {'title': AppLocalizations.of(context)!.findPharmacy, 'path': 'videos/requestPharmacy.mp4'},
+    ];
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Help', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold,color: Colors.white)),
+        title: Text(AppLocalizations.of(context)!.help, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold,color: Colors.white)),
         backgroundColor: Colors.blue.shade700,
       ),
       body: ListView.builder(

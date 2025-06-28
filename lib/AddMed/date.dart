@@ -4,6 +4,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:medtrack/services/notification_service.dart';
 import 'refillrequest.dart';
 import 'package:flutter_tts/flutter_tts.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class DatePage extends StatefulWidget {
   final String medicationName;
@@ -223,7 +225,7 @@ class _DatePageState extends State<DatePage> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text("Reminder ${index + 1}", style: const TextStyle(fontSize: 16)),
+            Text("${AppLocalizations.of(context)!.reminderTime} ${index + 1}", style: const TextStyle(fontSize: 16)),
             const SizedBox(height: 10),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -385,7 +387,7 @@ class _DatePageState extends State<DatePage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Date & Time"),
+        title: Text(AppLocalizations.of(context)!.dateAndTime),
         backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
@@ -415,7 +417,7 @@ class _DatePageState extends State<DatePage> {
                     strokeWidth: 2.5,
                   ),
                 )
-              : const Text("Next",
+              :  Text(AppLocalizations.of(context)!.next,
                   style: TextStyle(fontSize: 18, color: Colors.white)),
         ),
       ),

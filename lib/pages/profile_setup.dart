@@ -8,6 +8,8 @@ import 'package:medtrack/home.dart';
 import 'package:http/http.dart' as http;
 
 import '../EmergencyContactHelper.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class ProfileSetupPage extends StatefulWidget {
   final String userId;
@@ -189,7 +191,7 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
         : AssetImage("images/user.png") as ImageProvider;
 
     return Scaffold(
-      appBar: AppBar(title: Text("Profile Setup")),
+      appBar: AppBar(title: Text(AppLocalizations.of(context)!.profileSetup)),
       body: Padding(
         padding: EdgeInsets.all(15.0),
         child: Column(
@@ -205,20 +207,20 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
                     ),
             ),
             SizedBox(height: 8),
-            Text("Add Profile Photo"),
+            Text(AppLocalizations.of(context)!.addProfilePhoto),
             SizedBox(height: 20),
             TextField(
               controller: _ageController,
-              decoration: InputDecoration(labelText: "Age"),
+              decoration: InputDecoration(labelText: AppLocalizations.of(context)!.age),
               maxLines: 3,
             ),
             TextField(
               controller: _illnessesController,
-              decoration: InputDecoration(labelText: "Illnesses"),
+              decoration: InputDecoration(labelText: AppLocalizations.of(context)!.illnesses),
               maxLines: 3,
             ),
             SizedBox(height: 20),
-            Text("Emergency Contacts",
+            Text(AppLocalizations.of(context)!.emergencyContacts,
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             Expanded(
               child: ListView.builder(
@@ -241,12 +243,12 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
             ),
             ElevatedButton(
               onPressed: _addEmergencyContact,
-              child: Text("Add Emergency Contact"),
+              child: Text(AppLocalizations.of(context)!.addEmergencyContact),
             ),
             SizedBox(height: 20),
             ElevatedButton(
               onPressed: _saveProfile,
-              child: Text("Save Profile"),
+              child: Text(AppLocalizations.of(context)!.saveProfile),
             ),
           ],
         ),

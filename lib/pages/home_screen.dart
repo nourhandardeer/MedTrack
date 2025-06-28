@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:medtrack/pages/loggin.dart';
 import 'package:medtrack/pages/sign_up.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -37,7 +39,7 @@ class HomeScreen extends StatelessWidget {
                 ),
               ),
               child: Text(
-                "Sign Up",
+                AppLocalizations.of(context)!.signUp,
                 style: TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
@@ -62,7 +64,7 @@ class HomeScreen extends StatelessWidget {
                 ),
               ),
               child: Text(
-                "Login",
+                AppLocalizations.of(context)!.logIn,
                 style: TextStyle(
                   color: Colors.blue.shade900,
                   fontWeight: FontWeight.bold,

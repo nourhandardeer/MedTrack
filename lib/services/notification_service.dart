@@ -426,6 +426,73 @@ class NotificationService {
     print("✅ All reminders and alarms scheduled for user: $uid");
   }
 
+  static Future<void> rescheduleUpcomingAppointments(String uid) async {
+  if (!_isInitialized) await initialize();
+  bool enabled = await areNotificationsEnabled();
+  if (!enabled) return;
+
+  print("🔄 Rescheduling upcoming appointments for user: $uid");
+
+  final appointmentSnapshot = await FirebaseFirestore.instance
+      .collection('appointments')
+      .where('linkedUserIds', arrayContains: uid)
+      .get();
+
+  print("📅 Appointments fetched: ${appointmentSnapshot.docs.length}");
+
+  final now = DateTime.now();
+  final dateFormat = DateFormat('yyyy-MM-dd');
+  final timeFormat = DateFormat.jm(); // e.g., "6:30 PM"
+
+  for (final doc in appointmentSnapshot.docs) {
+    final data = doc.data();
+
+    final dateStr = data['appointmentDate'] as String?;
+    final timeStr = data['appointmentTime'] as String?;
+    final doctorName = data['doctorName'] ?? 'Doctor';
+    final docId = doc.id;
+
+    if (dateStr == null || timeStr == null) {
+      print("⚠️ Skipping $docId: missing date or time");
+      continue;
+    }
+
+    try {
+      final date = dateFormat.parse(dateStr);
+      final time = timeFormat.parse(timeStr);
+
+      final appointmentDateTime = DateTime(
+        date.year,
+        date.month,
+        date.day,
+        time.hour,
+        time.minute,
+      );
+
+      if (appointmentDateTime.isAfter(now)) {
+        final reminderTime = appointmentDateTime.subtract(Duration(minutes: 60));
+
+        await NotificationService.scheduleNotification(
+          id: appointmentDateTime.millisecondsSinceEpoch.remainder(100000),
+          title: 'Appointment Reminder',
+          bodyEn: 'You have an appointment with Dr. $doctorName at $timeStr',
+          bodyAr: 'لديك موعد مع الدكتور $doctorName في الساعة $timeStr',
+          scheduledTime: reminderTime,
+          ttsMessageEn: 'Reminder! Appointment with Dr. $doctorName at $timeStr.',
+          ttsMessageAr: 'تذكير! لديك موعد مع الدكتور $doctorName في الساعة $timeStr.',
+        );
+
+        print("✅ Scheduled reminder for $appointmentDateTime");
+      } else {
+        print("⏭️ Skipping past appointment at $appointmentDateTime");
+      }
+    } catch (e) {
+      print("❌ Error parsing appointment for $docId: $e");
+    }
+  }
+}
+
+
   static String _translateUnitToArabic(String unit) {
     const unitMap = {
       "Pill(s)": "حبّة",

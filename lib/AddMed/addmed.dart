@@ -5,6 +5,8 @@ import 'package:sqflite/sqflite.dart';
 import '../services/MedicineDatabaseHelper.dart';
 import '../services/firestore_service.dart';
 import 'times.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class AddMedicationPage extends StatefulWidget {
   @override
@@ -180,8 +182,8 @@ class _AddMedicationPageState extends State<AddMedicationPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              "Which medication would you like to set the reminder for?",
+             Text(
+              AppLocalizations.of(context)!.selectMedicationForReminder,
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 15),
@@ -208,7 +210,7 @@ class _AddMedicationPageState extends State<AddMedicationPage> {
                   controller: controller,
                   focusNode: focusNode,
                   decoration: InputDecoration(
-                    labelText: "Medication Name",
+                    labelText: AppLocalizations.of(context)!.medication,
                     border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12)),
                   ),
@@ -254,8 +256,8 @@ class _AddMedicationPageState extends State<AddMedicationPage> {
               },
             ),
             const SizedBox(height: 30),
-            const Text(
-              "Select Unit",
+             Text(
+              AppLocalizations.of(context)!.selectUnit,
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 15),
@@ -267,15 +269,16 @@ class _AddMedicationPageState extends State<AddMedicationPage> {
                     OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
               ),
               value: selectedUnit,
-              hint: const Text("Choose a unit"),
+              hint:  Text(AppLocalizations.of(context)!.selectUnit),
               items: units
                   .map((unit) =>
                       DropdownMenuItem(value: unit, child: Text(unit)))
                   .toList(),
               onChanged: (value) => setState(() => selectedUnit = value),
             ),
-            const Text(
-              "Select Dosage",
+            const SizedBox(height: 30),
+             Text(
+              AppLocalizations.of(context)!.dosage,
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 15),
@@ -330,8 +333,8 @@ class _AddMedicationPageState extends State<AddMedicationPage> {
                     strokeWidth: 2.5,
                   ),
                 )
-              : const Text(
-                  "Next",
+              :  Text(
+                  AppLocalizations.of(context)!.next,
                   style: TextStyle(fontSize: 18, color: Colors.white),
                 ),
         ),
