@@ -6,6 +6,7 @@ import 'package:medtrack/home.dart';
 import 'package:medtrack/pages/profile_setup.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:medtrack/services/firestore_service.dart';
 class VerifyEmailPage extends StatefulWidget {
   final User user;
   final String firstName, lastName, phone, email;
@@ -25,7 +26,7 @@ class VerifyEmailPage extends StatefulWidget {
 class _VerifyEmailPageState extends State<VerifyEmailPage> {
   Timer? _timer;
   bool canResend = true;
-
+FirestoreService firestore = FirestoreService();
   @override
   void initState() {
     super.initState();
@@ -33,39 +34,45 @@ class _VerifyEmailPageState extends State<VerifyEmailPage> {
   }
 
   void _startEmailCheckTimer() {
-  _timer = Timer.periodic(Duration(seconds: 5), (_) async {
-    await FirebaseAuth.instance.currentUser?.reload();
-    var refreshedUser = FirebaseAuth.instance.currentUser;
+    _timer = Timer.periodic(Duration(seconds: 5), (_) async {
+      await FirebaseAuth.instance.currentUser?.reload();
+      var refreshedUser = FirebaseAuth.instance.currentUser;
 
-    if (refreshedUser != null && refreshedUser.emailVerified) {
-      _timer?.cancel();
+      if (refreshedUser != null && refreshedUser.emailVerified) {
+        _timer?.cancel();
 
-      // Save to Firestore ONLY after verification
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(refreshedUser.uid)
-          .set({
-        'firstName': widget.firstName,
-        'lastName': widget.lastName,
-        'email': widget.email,
-        'phone': widget.phone,
-        'isEmergency': false,
-      });
+        bool isEmergency = await firestore.checkAndLinkEmergencyContact(
+          refreshedUser,
+          refreshedUser.uid,
+          widget.phone,
+        );
 
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => ProfileSetupPage(
-            userId: refreshedUser.uid,
-            firstName: widget.firstName,
-            lastName: widget.lastName,
-            phone: widget.phone,
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(refreshedUser.uid)
+            .set({
+          'firstName': widget.firstName,
+          'lastName': widget.lastName,
+          'email': widget.email,
+          'phone': widget.phone,
+          'isEmergency': isEmergency,
+        }, SetOptions(merge: true));
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ProfileSetupPage(
+              userId: refreshedUser.uid,
+              firstName: widget.firstName,
+              lastName: widget.lastName,
+              phone: widget.phone,
+              isEmergency: isEmergency,
+            ),
           ),
-        ),
-      );
-    }
-  });
-}
+        );
+      }
+    });
+  }
 
 
   void _resendVerificationEmail() async {

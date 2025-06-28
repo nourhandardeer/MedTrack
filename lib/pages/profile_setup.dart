@@ -17,6 +17,7 @@ class ProfileSetupPage extends StatefulWidget {
   final String firstName;
   final String lastName;
   final String phone;
+  final bool isEmergency;
 
   const ProfileSetupPage({
     super.key,
@@ -24,6 +25,7 @@ class ProfileSetupPage extends StatefulWidget {
     required this.firstName,
     required this.lastName,
     required this.phone,
+    required this.isEmergency,
   });
 
   @override
@@ -134,7 +136,8 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
         'age': _ageController.text.trim(),
         'illnesses': _illnessesController.text.trim(),
         'phone': PhoneValidator.normalizePhone(_phone.text.trim()),
-      });
+        'isEmergency': widget.isEmergency,
+      } ,SetOptions(merge: true));
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Profile saved successfully!')),
